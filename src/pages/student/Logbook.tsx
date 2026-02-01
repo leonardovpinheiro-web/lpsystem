@@ -337,6 +337,18 @@ export default function Logbook() {
 
   const currentWeek = weeks.find((w) => w.week_number.toString() === activeWeek);
 
+  // Get all unique exercises across all weeks, ordered by exercise_order
+  const allExercises = weeks.length > 0
+    ? weeks[0].entries.map((e) => ({
+        name: e.exercise_name,
+        order: e.exercise_order,
+      }))
+    : [];
+
+  const getEntryForExercise = (week: LogbookWeek, exerciseName: string) => {
+    return week.entries.find((e) => e.exercise_name === exerciseName);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -382,116 +394,115 @@ export default function Logbook() {
         </Card>
       ) : (
         <Card>
-          <CardHeader className="pb-3">
-            <Tabs value={activeWeek} onValueChange={setActiveWeek}>
-              <TabsList className="flex-wrap h-auto gap-1">
-                {weeks.map((week) => (
-                  <TabsTrigger
-                    key={week.id}
-                    value={week.week_number.toString()}
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                  >
-                    Semana {week.week_number}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </CardHeader>
-          <CardContent>
-            {currentWeek && (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2 font-medium text-muted-foreground min-w-[180px]">
-                        Exercício
-                      </th>
-                      <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                        Série 1
-                      </th>
-                      <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                        Série 2
-                      </th>
-                      <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                        Série 3
-                      </th>
-                      <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                        Série 4
-                      </th>
-                    </tr>
-                    <tr className="border-b bg-muted/30">
-                      <th></th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentWeek.entries.map((entry, index) => (
-                      <tr
-                        key={entry.id}
-                        className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}
-                      >
-                        <td className="p-2 font-medium">
-                          <span className="inline-flex items-center gap-2">
-                            <span className="w-5 h-5 bg-primary/10 rounded flex items-center justify-center text-xs font-medium text-primary">
-                              {entry.exercise_order + 1}
-                            </span>
-                            {entry.exercise_name}
-                          </span>
-                        </td>
+          <CardContent className="p-4">
+            <div className="overflow-x-auto">
+              <div className="flex gap-0">
+                {/* Fixed exercise column */}
+                <div className="flex-shrink-0 min-w-[180px] border-r border-border">
+                  <div className="h-14 border-b border-border" />
+                  <div className="h-8 border-b border-border bg-muted/30" />
+                  {allExercises.map((exercise, index) => (
+                    <div
+                      key={exercise.name}
+                      className={`h-12 flex items-center px-3 border-b border-border ${
+                        index % 2 === 0 ? "bg-background" : "bg-muted/20"
+                      }`}
+                    >
+                      <span className="inline-flex items-center gap-2 font-medium text-sm">
+                        <span className="w-5 h-5 bg-primary/10 rounded flex items-center justify-center text-xs font-medium text-primary">
+                          {exercise.order + 1}
+                        </span>
+                        <span className="truncate max-w-[120px]">{exercise.name}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Scrollable weeks columns */}
+                <div className="flex overflow-x-auto">
+                  {weeks.map((week) => (
+                    <div key={week.id} className="flex-shrink-0 min-w-[320px] border-r border-border last:border-r-0">
+                      {/* Week header */}
+                      <div className="h-14 flex items-center justify-center border-b border-border bg-muted/50">
+                        <h3 className="text-lg font-bold">Semana {week.week_number}</h3>
+                      </div>
+                      
+                      {/* Series headers */}
+                      <div className="h-8 flex border-b border-border bg-muted/30">
                         {[1, 2, 3, 4].map((setNum) => (
-                          <>
-                            <td key={`${entry.id}-set${setNum}-weight`} className="p-1">
-                              <Input
-                                type="number"
-                                step="0.5"
-                                className="h-8 w-16 text-center"
-                                value={entry[`set${setNum}_weight` as keyof LogbookEntry] ?? ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    entry.id,
-                                    `set${setNum}_weight`,
-                                    e.target.value,
-                                    currentWeek.week_number
-                                  )
-                                }
-                                onBlur={(e) =>
-                                  handleInputBlur(entry.id, `set${setNum}_weight`, e.target.value)
-                                }
-                              />
-                            </td>
-                            <td key={`${entry.id}-set${setNum}-reps`} className="p-1">
-                              <Input
-                                type="number"
-                                className="h-8 w-14 text-center"
-                                value={entry[`set${setNum}_reps` as keyof LogbookEntry] ?? ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    entry.id,
-                                    `set${setNum}_reps`,
-                                    e.target.value,
-                                    currentWeek.week_number
-                                  )
-                                }
-                                onBlur={(e) =>
-                                  handleInputBlur(entry.id, `set${setNum}_reps`, e.target.value)
-                                }
-                              />
-                            </td>
-                          </>
+                          <div key={setNum} className="flex-1 flex items-center justify-center gap-1 border-r border-border last:border-r-0">
+                            <span className="text-xs text-muted-foreground font-medium">S{setNum}</span>
+                            <span className="text-[10px] text-muted-foreground">(kg/rep)</span>
+                          </div>
                         ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      </div>
+
+                      {/* Exercise rows */}
+                      {allExercises.map((exercise, index) => {
+                        const entry = getEntryForExercise(week, exercise.name);
+                        return (
+                          <div
+                            key={`${week.id}-${exercise.name}`}
+                            className={`h-12 flex ${
+                              index % 2 === 0 ? "bg-background" : "bg-muted/20"
+                            }`}
+                          >
+                            {[1, 2, 3, 4].map((setNum) => (
+                              <div
+                                key={`set-${setNum}`}
+                                className="flex-1 flex items-center justify-center gap-1 border-r border-border last:border-r-0 px-1"
+                              >
+                                {entry ? (
+                                  <>
+                                    <Input
+                                      type="number"
+                                      step="0.5"
+                                      className="h-8 w-12 text-center text-xs p-1"
+                                      value={entry[`set${setNum}_weight` as keyof LogbookEntry] ?? ""}
+                                      onChange={(e) =>
+                                        handleInputChange(
+                                          entry.id,
+                                          `set${setNum}_weight`,
+                                          e.target.value,
+                                          week.week_number
+                                        )
+                                      }
+                                      onBlur={(e) =>
+                                        handleInputBlur(entry.id, `set${setNum}_weight`, e.target.value)
+                                      }
+                                      placeholder="kg"
+                                    />
+                                    <Input
+                                      type="number"
+                                      className="h-8 w-10 text-center text-xs p-1"
+                                      value={entry[`set${setNum}_reps` as keyof LogbookEntry] ?? ""}
+                                      onChange={(e) =>
+                                        handleInputChange(
+                                          entry.id,
+                                          `set${setNum}_reps`,
+                                          e.target.value,
+                                          week.week_number
+                                        )
+                                      }
+                                      onBlur={(e) =>
+                                        handleInputBlur(entry.id, `set${setNum}_reps`, e.target.value)
+                                      }
+                                      placeholder="r"
+                                    />
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">-</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       )}
