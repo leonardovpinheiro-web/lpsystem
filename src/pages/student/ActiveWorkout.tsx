@@ -549,10 +549,22 @@ export default function ActiveWorkout() {
                     {/* Last week reference */}
                     {lastWeekData[exercise.id] && (
                       <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-2">Última semana (S1):</p>
-                        <p className="text-sm font-medium">
-                          {getLastWeekValue(exercise.id, 1, "weight")} kg × {getLastWeekValue(exercise.id, 1, "reps")} reps
-                        </p>
+                        <p className="text-xs text-muted-foreground mb-2">Última semana:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: numSets }, (_, i) => i + 1).map((setNum) => {
+                            const weight = getLastWeekValue(exercise.id, setNum, "weight");
+                            const reps = getLastWeekValue(exercise.id, setNum, "reps");
+                            const hasData = weight !== "-" || reps !== "-";
+                            return (
+                              <div key={setNum} className="flex items-center gap-2 text-sm">
+                                <span className="font-medium text-primary">S{setNum}:</span>
+                                <span className={hasData ? "text-foreground" : "text-muted-foreground"}>
+                                  {weight} kg × {reps}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
