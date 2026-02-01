@@ -49,10 +49,18 @@ interface LogbookEntry {
   set4_reps: number | null;
 }
 
+interface WorkoutExercise {
+  id: string;
+  name: string;
+  order_index: number;
+  video_url: string | null;
+}
+
 export default function Logbook() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<string>("");
   const [weeks, setWeeks] = useState<LogbookWeek[]>([]);
+  const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [activeWeek, setActiveWeek] = useState<string>("1");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -73,6 +81,7 @@ export default function Logbook() {
   useEffect(() => {
     if (selectedWorkout) {
       fetchLogbookWeeks();
+      fetchWorkoutExercises();
     }
   }, [selectedWorkout]);
 
@@ -123,6 +132,21 @@ export default function Logbook() {
       setSelectedWorkout(allWorkouts[0].id);
     }
     setLoading(false);
+  };
+
+  const fetchWorkoutExercises = async () => {
+    const { data, error } = await supabase
+      .from("exercises")
+      .select("id, name, order_index, video_url")
+      .eq("workout_id", selectedWorkout)
+      .order("order_index", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching workout exercises:", error);
+      return;
+    }
+
+    setWorkoutExercises(data || []);
   };
 
   const fetchLogbookWeeks = async () => {
@@ -370,17 +394,16 @@ export default function Logbook() {
 
   const currentWeek = weeks.find((w) => w.week_number.toString() === activeWeek);
 
-  // Get all unique exercises across all weeks, ordered by exercise_order
-  const allExercises = weeks.length > 0
-    ? weeks[0].entries.map((e) => ({
-        name: e.exercise_name,
-        order: e.exercise_order,
-        video_url: e.video_url,
-      }))
-    : [];
+  // Use exercises from the current workout prescription (always up to date)
+  const allExercises = workoutExercises.map((e) => ({
+    id: e.id,
+    name: e.name,
+    order: e.order_index,
+    video_url: e.video_url,
+  }));
 
-  const getEntryForExercise = (week: LogbookWeek, exerciseName: string) => {
-    return week.entries.find((e) => e.exercise_name === exerciseName);
+  const getEntryForExercise = (week: LogbookWeek, exerciseId: string) => {
+    return week.entries.find((e) => e.original_exercise_id === exerciseId);
   };
 
   const openVideoModal = (url: string | null, name: string) => {
@@ -488,10 +511,10 @@ export default function Logbook() {
 
                       {/* Exercise rows */}
                       {allExercises.map((exercise, index) => {
-                        const entry = getEntryForExercise(week, exercise.name);
+                        const entry = getEntryForExercise(week, exercise.id);
                         return (
                           <div
-                            key={`${week.id}-${exercise.name}`}
+                            key={`${week.id}-${exercise.id}`}
                             className={`h-12 flex ${
                               index % 2 === 0 ? "bg-background" : "bg-muted/20"
                             }`}
