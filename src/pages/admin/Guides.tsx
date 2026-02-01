@@ -140,7 +140,7 @@ export default function GuidesAdmin() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Guias de Treinamento</h1>
+          <h1 className="text-3xl font-bold">Guia de Treino</h1>
           <p className="text-muted-foreground">
             Crie conteúdos educativos para seus alunos
           </p>

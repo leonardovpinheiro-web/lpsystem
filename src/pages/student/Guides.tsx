@@ -39,10 +39,10 @@ export default function GuidesStudent() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Guias de Treinamento</h1>
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold">Guia de Treino</h1>
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
         <div className="space-y-4">
           {[1, 2].map((i) => (
             <Card key={i} className="animate-pulse">
@@ -59,7 +59,7 @@ export default function GuidesStudent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Guias de Treinamento</h1>
+        <h1 className="text-3xl font-bold">Guia de Treino</h1>
         <p className="text-muted-foreground">
           Informações importantes sobre sua metodologia de treino
         </p>

@@ -31,13 +31,13 @@ export default function Sidebar() {
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/students", label: "Alunos", icon: Users },
     { href: "/library", label: "Biblioteca", icon: Library },
-    { href: "/guides", label: "Guias", icon: BookOpen },
+    { href: "/guides", label: "Guia de treino", icon: BookOpen },
   ];
 
   const studentLinks = [
     { href: "/", label: "Meus Treinos", icon: Dumbbell },
     { href: "/logbook", label: "Logbook", icon: ClipboardList },
-    { href: "/guides", label: "Guias", icon: BookOpen },
+    { href: "/guides", label: "Guia de treino", icon: BookOpen },
   ];
 
   const links = isAdmin ? adminLinks : studentLinks;
