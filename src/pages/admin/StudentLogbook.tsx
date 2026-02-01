@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, ClipboardList } from "lucide-react";
 import {
   Select,
@@ -57,7 +56,6 @@ export default function StudentLogbook() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<string>("");
   const [weeks, setWeeks] = useState<LogbookWeek[]>([]);
-  const [activeWeek, setActiveWeek] = useState<string>("1");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -170,9 +168,6 @@ export default function StudentLogbook() {
     }));
 
     setWeeks(formattedWeeks);
-    if (formattedWeeks.length > 0) {
-      setActiveWeek(formattedWeeks[0].week_number.toString());
-    }
   };
 
   if (loading) {
@@ -204,8 +199,6 @@ export default function StudentLogbook() {
       </div>
     );
   }
-
-  const currentWeek = weeks.find((w) => w.week_number.toString() === activeWeek);
 
   return (
     <div className="space-y-6">
@@ -260,94 +253,78 @@ export default function StudentLogbook() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader className="pb-3">
-            <Tabs value={activeWeek} onValueChange={setActiveWeek}>
-              <TabsList className="flex-wrap h-auto gap-1">
-                {weeks.map((week) => (
-                  <TabsTrigger
-                    key={week.id}
-                    value={week.week_number.toString()}
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                  >
-                    Semana {week.week_number}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </CardHeader>
-          <CardContent>
-            {currentWeek && (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2 font-medium text-muted-foreground min-w-[180px]">
-                        Exercício
-                      </th>
-                      <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                        Série 1
-                      </th>
-                      <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                        Série 2
-                      </th>
-                      <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                        Série 3
-                      </th>
-                      <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                        Série 4
-                      </th>
-                    </tr>
-                    <tr className="border-b bg-muted/30">
-                      <th></th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                      <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentWeek.entries.map((entry, index) => (
-                      <tr
-                        key={entry.id}
-                        className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}
-                      >
-                        <td className="p-2 font-medium">
-                          <span className="inline-flex items-center gap-2">
-                            <span className="w-5 h-5 bg-primary/10 rounded flex items-center justify-center text-xs font-medium text-primary">
-                              {entry.exercise_order + 1}
-                            </span>
-                            {entry.exercise_name}
-                          </span>
-                        </td>
-                        {[1, 2, 3, 4].map((setNum) => (
-                          <>
-                            <td
-                              key={`${entry.id}-set${setNum}-weight`}
-                              className="p-2 text-center"
-                            >
-                              {entry[`set${setNum}_weight` as keyof LogbookEntry] ?? "-"}
-                            </td>
-                            <td
-                              key={`${entry.id}-set${setNum}-reps`}
-                              className="p-2 text-center"
-                            >
-                              {entry[`set${setNum}_reps` as keyof LogbookEntry] ?? "-"}
-                            </td>
-                          </>
-                        ))}
+        <div className="space-y-6">
+          {weeks.map((week) => (
+            <Card key={week.id}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Semana {week.week_number}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2 font-medium text-muted-foreground min-w-[180px]">
+                          Exercício
+                        </th>
+                        <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
+                          Série 1
+                        </th>
+                        <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
+                          Série 2
+                        </th>
+                        <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
+                          Série 3
+                        </th>
+                        <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
+                          Série 4
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      <tr className="border-b bg-muted/30">
+                        <th></th>
+                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
+                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
+                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
+                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
+                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
+                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
+                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
+                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {week.entries.map((entry, index) => (
+                        <tr
+                          key={entry.id}
+                          className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}
+                        >
+                          <td className="p-2 font-medium">
+                            <span className="inline-flex items-center gap-2">
+                              <span className="w-5 h-5 bg-primary/10 rounded flex items-center justify-center text-xs font-medium text-primary">
+                                {entry.exercise_order + 1}
+                              </span>
+                              {entry.exercise_name}
+                            </span>
+                          </td>
+                          {[1, 2, 3, 4].map((setNum) => (
+                            <React.Fragment key={`${entry.id}-set${setNum}`}>
+                              <td className="p-2 text-center">
+                                {entry[`set${setNum}_weight` as keyof LogbookEntry] ?? "-"}
+                              </td>
+                              <td className="p-2 text-center">
+                                {entry[`set${setNum}_reps` as keyof LogbookEntry] ?? "-"}
+                              </td>
+                            </React.Fragment>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );
