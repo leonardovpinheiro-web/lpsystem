@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -18,6 +19,7 @@ import {
   GripVertical,
   ChevronDown,
   ChevronUp,
+  Wind,
 } from "lucide-react";
 import ExerciseTable, { ExerciseTableRef } from "./ExerciseTable";
 
@@ -40,6 +42,7 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
   const [newWorkoutName, setNewWorkoutName] = useState("");
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [programName, setProgramName] = useState("");
+  const [aerobicInfo, setAerobicInfo] = useState("");
   const { toast } = useToast();
   
   // Store refs to ExerciseTable components for flushing
@@ -53,13 +56,39 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
   const fetchProgram = async () => {
     const { data, error } = await supabase
       .from("training_programs")
-      .select("name")
+      .select("name, aerobic_info")
       .eq("id", programId)
       .single();
 
     if (data) {
       setProgramName(data.name);
+      setAerobicInfo(data.aerobic_info || "");
     }
+  };
+
+  // Save aerobic info to database
+  const saveAerobicInfo = useCallback(async (newInfo: string) => {
+    const { error } = await supabase
+      .from("training_programs")
+      .update({ aerobic_info: newInfo.trim() || null })
+      .eq("id", programId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao salvar informações de aeróbico",
+      });
+    }
+  }, [programId, toast]);
+
+  // Debounced save for aerobic info
+  const { debouncedCallback: debouncedSaveAerobicInfo } = useDebouncedCallback(saveAerobicInfo, 500);
+
+  // Handle aerobic info change
+  const handleAerobicInfoChange = (value: string) => {
+    setAerobicInfo(value);
+    debouncedSaveAerobicInfo(value);
   };
 
   const fetchWorkouts = async () => {
@@ -210,6 +239,24 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
           Novo Treino
         </Button>
       </div>
+
+      {/* Aerobic Info Card */}
+      <Card className="border-dashed">
+        <CardHeader className="py-3 bg-secondary/30">
+          <div className="flex items-center gap-2">
+            <Wind className="w-5 h-5 text-primary" />
+            <CardTitle className="text-base">Informações de Aeróbico</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          <Textarea
+            placeholder="Ex: 20 minutos de esteira após o treino, 3x por semana..."
+            value={aerobicInfo}
+            onChange={(e) => handleAerobicInfoChange(e.target.value)}
+            className="min-h-[80px] resize-none"
+          />
+        </CardContent>
+      </Card>
 
       <div className="space-y-4">
         {workouts.map((workout) => (
