@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      courses: {
+        Row: {
+          category: Database["public"]["Enums"]["course_category"]
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["course_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["course_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      enrollments: {
+        Row: {
+          course_id: string
+          enrolled_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          enrolled_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          enrolled_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercise_library: {
         Row: {
           created_at: string
@@ -87,6 +149,88 @@ export type Database = {
             columns: ["workout_id"]
             isOneToOne: false
             referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          lesson_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons: {
+        Row: {
+          content: string | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          module_id: string
+          order_index: number
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          module_id: string
+          order_index?: number
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          module_id?: string
+          order_index?: number
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
             referencedColumns: ["id"]
           },
         ]
@@ -263,8 +407,47 @@ export type Database = {
           },
         ]
       }
+      modules: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          id: string
+          order_index: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          access_plan: string | null
           created_at: string
           email: string
           full_name: string
@@ -273,6 +456,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          access_plan?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -281,6 +465,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          access_plan?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -502,6 +687,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "student"
+      course_category: "geral" | "nutricao" | "treinamento"
       student_status: "active" | "paused"
     }
     CompositeTypes: {
@@ -631,6 +817,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "student"],
+      course_category: ["geral", "nutricao", "treinamento"],
       student_status: ["active", "paused"],
     },
   },

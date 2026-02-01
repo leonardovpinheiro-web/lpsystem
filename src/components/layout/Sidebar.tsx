@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   Menu,
   Library,
+  GraduationCap,
 } from "lucide-react";
 import lpLogo from "@/assets/lp-logo.png";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export default function Sidebar() {
     { href: "/", label: "Meus Treinos", icon: Dumbbell },
     { href: "/logbook", label: "Logbook", icon: ClipboardList },
     { href: "/guides", label: "Guia de treino", icon: BookOpen },
+    { href: "/platform", label: "Plataforma", icon: GraduationCap },
   ];
 
   const links = isAdmin ? adminLinks : studentLinks;
