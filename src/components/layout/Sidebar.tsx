@@ -52,7 +52,7 @@ export default function Sidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <h1 className="font-bold text-sidebar-accent-foreground truncate">
-                Sistema de Treinos
+                Sistema LP
               </h1>
               <p className="text-xs text-sidebar-foreground truncate">
                 {isAdmin ? "Admin" : "Aluno"}

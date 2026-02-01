@@ -229,7 +229,7 @@ export default function Auth() {
           <div className="mx-auto w-16 h-16 rounded-xl flex items-center justify-center mb-4">
             <img src={lpLogo} alt="LP Logo" className="w-full h-full object-contain" />
           </div>
-          <CardTitle className="text-2xl">Sistema de Treinos</CardTitle>
+          <CardTitle className="text-2xl">Sistema LP</CardTitle>
           <CardDescription>
             Faça login ou crie sua conta para acessar seus treinos
           </CardDescription>
