@@ -15,6 +15,7 @@ import {
   Save,
   Clock,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Collapsible,
   CollapsibleContent,
@@ -67,6 +68,7 @@ export default function ActiveWorkout() {
   const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
   const [currentWeekNumber, setCurrentWeekNumber] = useState<number>(1);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [workoutNotes, setWorkoutNotes] = useState("");
   
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingSaveRef = useRef<Record<string, SetData[]>>({});
@@ -432,10 +434,13 @@ export default function ActiveWorkout() {
         }
       }
 
-      // Mark the week as completed
+      // Mark the week as completed and save notes
       await supabase
         .from("logbook_weeks")
-        .update({ completed_at: new Date().toISOString() })
+        .update({ 
+          completed_at: new Date().toISOString(),
+          notes: workoutNotes.trim() || null
+        })
         .eq("id", currentWeekId);
 
       toast({
@@ -653,6 +658,19 @@ export default function ActiveWorkout() {
             </Collapsible>
           );
         })}
+      </div>
+
+      {/* Workout notes */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-muted-foreground">
+          Comentários sobre o treino (opcional)
+        </label>
+        <Textarea
+          placeholder="Como foi o treino? Alguma observação importante?"
+          value={workoutNotes}
+          onChange={(e) => setWorkoutNotes(e.target.value)}
+          className="min-h-[80px]"
+        />
       </div>
 
       {/* Fixed footer button */}

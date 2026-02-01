@@ -213,6 +213,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           id: string
+          notes: string | null
           program_id: string
           student_id: string
           week_number: number
@@ -222,6 +223,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          notes?: string | null
           program_id: string
           student_id: string
           week_number: number
@@ -231,6 +233,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          notes?: string | null
           program_id?: string
           student_id?: string
           week_number?: number
