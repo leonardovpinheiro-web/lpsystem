@@ -192,7 +192,12 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
   };
 
   const handleExerciseSelect = async (exerciseId: string, name: string, videoUrl: string | null) => {
-    // Salva no banco PRIMEIRO, depois atualiza o estado local
+    // Atualiza estado local IMEDIATAMENTE para mostrar o ícone de vídeo
+    setExercises(prev => prev.map(ex => 
+      ex.id === exerciseId ? { ...ex, name, video_url: videoUrl } : ex
+    ));
+
+    // Salva no banco
     const { error } = await supabase
       .from("exercises")
       .update({ name, video_url: videoUrl })
@@ -204,11 +209,13 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
         title: "Erro",
         description: "Erro ao salvar exercício",
       });
-    } else {
-      // Atualiza estado local somente após salvar com sucesso
-      setExercises(prev => prev.map(ex => 
-        ex.id === exerciseId ? { ...ex, name, video_url: videoUrl } : ex
-      ));
+      // Reverte em caso de erro - refetch do banco
+      const { data } = await supabase
+        .from("exercises")
+        .select("*")
+        .eq("workout_id", workoutId)
+        .order("order_index", { ascending: true });
+      if (data) setExercises(data);
     }
   };
 
