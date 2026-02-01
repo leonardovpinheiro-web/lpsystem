@@ -158,9 +158,9 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
       .insert({
         workout_id: workoutId,
         order_index: maxOrder + 1,
-        name: "Novo Exercício",
-        sets: "3",
-        reps: "8-12",
+        name: "",
+        sets: "",
+        reps: "",
       })
       .select()
       .single();
