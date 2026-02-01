@@ -148,6 +148,7 @@ export default function ActiveWorkout() {
         .select(`
           id,
           week_number,
+          completed_at,
           entries:logbook_week_entries(
             original_exercise_id,
             set1_weight,
@@ -169,14 +170,10 @@ export default function ActiveWorkout() {
       let previousWeekData: Record<string, LastWeekData> = {};
 
       if (existingWeeks && existingWeeks.length > 0) {
-        const lastWeek = existingWeeks[0];
+        const lastWeek = existingWeeks[0] as any;
         
-        // Check if last week is "complete" - has data for ALL exercises
-        const entriesWithData = (lastWeek.entries as any[])?.filter((e) => 
-          e.set1_weight !== null || e.set1_reps !== null
-        ) || [];
-        
-        const isWeekComplete = entriesWithData.length >= sortedExercises.length;
+        // Week is complete if it was explicitly finished by the student (completed_at is set)
+        const isWeekComplete = lastWeek.completed_at !== null;
 
         if (isWeekComplete) {
           // Week is complete, store its data for reference and create a new week
@@ -411,6 +408,12 @@ export default function ActiveWorkout() {
             .eq("original_exercise_id", exercise.id);
         }
       }
+
+      // Mark the week as completed
+      await supabase
+        .from("logbook_weeks")
+        .update({ completed_at: new Date().toISOString() })
+        .eq("id", currentWeekId);
 
       toast({
         title: "Treino finalizado!",
