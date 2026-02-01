@@ -344,8 +344,9 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          is_template: boolean
           name: string
-          student_id: string
+          student_id: string | null
           updated_at: string
         }
         Insert: {
@@ -353,8 +354,9 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_template?: boolean
           name: string
-          student_id: string
+          student_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -362,8 +364,9 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_template?: boolean
           name?: string
-          student_id?: string
+          student_id?: string | null
           updated_at?: string
         }
         Relationships: [

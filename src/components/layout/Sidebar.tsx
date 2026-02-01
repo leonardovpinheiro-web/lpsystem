@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   ChevronLeft,
   Menu,
+  Library,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -28,6 +29,7 @@ export default function Sidebar() {
   const adminLinks = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/students", label: "Alunos", icon: Users },
+    { href: "/library", label: "Biblioteca", icon: Library },
     { href: "/guides", label: "Guias", icon: BookOpen },
   ];
 
