@@ -222,10 +222,11 @@ export default function ActiveWorkout() {
           weekId = lastWeek.id;
           weekNumber = lastWeek.week_number;
 
-          // Get previous week's data if exists (for reference)
-          if (existingWeeks.length > 1) {
-            const prevWeek = existingWeeks[1];
-            (prevWeek.entries as any[])?.forEach((entry) => {
+          // Get the most recent COMPLETED week's data for reference
+          // Find the first week with completed_at set (should be existingWeeks[1] if ordered by week_number DESC)
+          const completedWeek = existingWeeks.find((w: any) => w.completed_at !== null);
+          if (completedWeek) {
+            ((completedWeek as any).entries as any[])?.forEach((entry) => {
               if (entry.original_exercise_id) {
                 previousWeekData[entry.original_exercise_id] = {
                   set1_weight: entry.set1_weight,
