@@ -27,6 +27,7 @@ interface LogbookWeek {
   id: string;
   week_number: number;
   workout_id: string;
+  notes: string | null;
   workout: {
     name: string;
   };
@@ -151,6 +152,7 @@ export default function Logbook() {
         id,
         week_number,
         workout_id,
+        notes,
         workout:workouts(name),
         entries:logbook_week_entries(
           id,
@@ -564,6 +566,15 @@ export default function Logbook() {
                           </div>
                         );
                       })}
+                      
+                      {/* Week notes */}
+                      {week.notes && (
+                        <div className="h-auto min-h-[40px] p-2 bg-muted/30 border-t border-border">
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-medium">Comentário:</span> {week.notes}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
