@@ -210,6 +210,7 @@ export type Database = {
       }
       logbook_weeks: {
         Row: {
+          completed_at: string | null
           created_at: string
           id: string
           program_id: string
@@ -218,6 +219,7 @@ export type Database = {
           workout_id: string
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           id?: string
           program_id: string
@@ -226,6 +228,7 @@ export type Database = {
           workout_id: string
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           id?: string
           program_id?: string
