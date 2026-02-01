@@ -171,13 +171,15 @@ export default function ActiveWorkout() {
       if (existingWeeks && existingWeeks.length > 0) {
         const lastWeek = existingWeeks[0];
         
-        // Check if last week has data
-        const hasData = (lastWeek.entries as any[])?.some((e) => 
+        // Check if last week is "complete" - has data for ALL exercises
+        const entriesWithData = (lastWeek.entries as any[])?.filter((e) => 
           e.set1_weight !== null || e.set1_reps !== null
-        );
+        ) || [];
+        
+        const isWeekComplete = entriesWithData.length >= sortedExercises.length;
 
-        if (hasData) {
-          // Store last week's data for reference
+        if (isWeekComplete) {
+          // Week is complete, store its data for reference and create a new week
           (lastWeek.entries as any[]).forEach((entry) => {
             if (entry.original_exercise_id) {
               previousWeekData[entry.original_exercise_id] = {
@@ -219,11 +221,11 @@ export default function ActiveWorkout() {
           }));
           await supabase.from("logbook_week_entries").insert(entriesData);
         } else {
-          // Use existing empty week
+          // Week exists and is NOT complete - use it and load existing data
           weekId = lastWeek.id;
           weekNumber = lastWeek.week_number;
 
-          // Get previous week's data if exists
+          // Get previous week's data if exists (for reference)
           if (existingWeeks.length > 1) {
             const prevWeek = existingWeeks[1];
             (prevWeek.entries as any[])?.forEach((entry) => {
@@ -243,7 +245,7 @@ export default function ActiveWorkout() {
             setLastWeekData(previousWeekData);
           }
 
-          // Load existing data into form
+          // Load existing data from current week into form
           const initialEntries: Record<string, SetData[]> = {};
           sortedExercises.forEach((ex) => {
             const numSets = parseInt(ex.sets) || 4;
