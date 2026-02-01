@@ -2,11 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -39,12 +34,24 @@ export default function ExerciseAutocomplete({
   const [inputValue, setInputValue] = useState(value);
   const [suggestions, setSuggestions] = useState<ExerciseLibraryItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     setInputValue(value);
   }, [value]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const searchExercises = async (query: string) => {
     if (!query.trim() || query.length < 2) {
@@ -85,68 +92,61 @@ export default function ExerciseAutocomplete({
     setInputValue(exercise.name);
     onChange(exercise.name, exercise.video_url);
     setOpen(false);
-    inputRef.current?.focus();
   };
 
   const handleBlur = () => {
     // Delay to allow click on suggestion
     setTimeout(() => {
-      setOpen(false);
       onBlur();
     }, 200);
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Input
-          ref={inputRef}
-          value={inputValue}
-          onChange={handleInputChange}
-          onBlur={handleBlur}
-          onFocus={() => {
-            if (suggestions.length > 0) setOpen(true);
-          }}
-          className={className}
-          placeholder="Digite o nome do exercício"
-        />
-      </PopoverTrigger>
-      <PopoverContent 
-        className="p-0 w-[300px]" 
-        align="start"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <Command>
-          <CommandList>
-            {loading ? (
-              <div className="p-2 text-sm text-muted-foreground text-center">
-                Buscando...
-              </div>
-            ) : suggestions.length === 0 ? (
-              <CommandEmpty>Nenhum exercício encontrado</CommandEmpty>
-            ) : (
-              <CommandGroup>
-                {suggestions.map((exercise) => (
-                  <CommandItem
-                    key={exercise.id}
-                    onSelect={() => handleSelectExercise(exercise)}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-medium">{exercise.name}</span>
-                      {exercise.video_url && (
-                        <span className="text-xs text-muted-foreground truncate">
-                          📹 Tem vídeo demonstrativo
-                        </span>
-                      )}
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <div ref={containerRef} className="relative">
+      <Input
+        value={inputValue}
+        onChange={handleInputChange}
+        onBlur={handleBlur}
+        onFocus={() => {
+          if (suggestions.length > 0) setOpen(true);
+        }}
+        className={className}
+        placeholder="Digite o nome do exercício"
+      />
+      {open && (
+        <div className="absolute top-full left-0 z-50 mt-1 w-[300px] rounded-md border bg-popover shadow-md">
+          <Command>
+            <CommandList>
+              {loading ? (
+                <div className="p-2 text-sm text-muted-foreground text-center">
+                  Buscando...
+                </div>
+              ) : suggestions.length === 0 ? (
+                <CommandEmpty>Nenhum exercício encontrado</CommandEmpty>
+              ) : (
+                <CommandGroup>
+                  {suggestions.map((exercise) => (
+                    <CommandItem
+                      key={exercise.id}
+                      onSelect={() => handleSelectExercise(exercise)}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium">{exercise.name}</span>
+                        {exercise.video_url && (
+                          <span className="text-xs text-muted-foreground truncate">
+                            📹 Tem vídeo demonstrativo
+                          </span>
+                        )}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </div>
+      )}
+    </div>
   );
 }
