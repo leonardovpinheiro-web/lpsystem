@@ -37,7 +37,7 @@ function getEmbedUrl(url: string): string | null {
 }
 
 function isExternalOnly(url: string): boolean {
-  return url.includes('instagram.com');
+  return url.includes('instagram.com') || url.includes('vimeo.com');
 }
 
 export function VideoModal({ open, onOpenChange, videoUrl, exerciseName }: VideoModalProps) {
