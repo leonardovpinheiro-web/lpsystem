@@ -3,6 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dumbbell,
@@ -10,6 +16,7 @@ import {
   ChevronUp,
   ClipboardList,
   Clock,
+  Play,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -29,6 +36,7 @@ interface Exercise {
   technique: string | null;
   rest_seconds: string | null;
   notes: string | null;
+  video_url: string | null;
 }
 
 interface Program {
@@ -38,10 +46,24 @@ interface Program {
   workouts: Workout[];
 }
 
+const getYouTubeEmbedUrl = (url: string): string | null => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}`;
+  }
+  return null;
+};
+
 export default function MyWorkouts() {
   const [program, setProgram] = useState<Program | null>(null);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [videoModal, setVideoModal] = useState<{ open: boolean; url: string; name: string }>({
+    open: false,
+    url: "",
+    name: "",
+  });
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -86,7 +108,8 @@ export default function MyWorkouts() {
             reps,
             technique,
             rest_seconds,
-            notes
+            notes,
+            video_url
           )
         )
       `)
@@ -221,6 +244,7 @@ export default function MyWorkouts() {
                       <tr>
                         <th className="w-12">#</th>
                         <th>Exercício</th>
+                        <th className="w-16">Vídeo</th>
                         <th className="w-20">Séries</th>
                         <th className="w-24">Reps</th>
                         <th className="w-24">Técnica</th>
@@ -238,6 +262,21 @@ export default function MyWorkouts() {
                             {index + 1}
                           </td>
                           <td className="font-medium">{exercise.name}</td>
+                          <td className="text-center">
+                            {exercise.video_url ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-primary hover:text-primary/80"
+                                onClick={() => setVideoModal({ open: true, url: exercise.video_url!, name: exercise.name })}
+                                title="Ver vídeo do exercício"
+                              >
+                                <Play className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </td>
                           <td className="text-center">{exercise.sets}</td>
                           <td className="text-center">{exercise.reps}</td>
                           <td className="text-center text-muted-foreground">
@@ -259,6 +298,28 @@ export default function MyWorkouts() {
           </Card>
         ))}
       </div>
+
+      <Dialog open={videoModal.open} onOpenChange={(open) => setVideoModal({ ...videoModal, open })}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>{videoModal.name}</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video w-full">
+            {videoModal.url && getYouTubeEmbedUrl(videoModal.url) ? (
+              <iframe
+                src={getYouTubeEmbedUrl(videoModal.url)!}
+                className="w-full h-full rounded-lg"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-muted rounded-lg">
+                <p className="text-muted-foreground">Vídeo não disponível</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
