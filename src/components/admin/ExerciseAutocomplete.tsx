@@ -20,6 +20,7 @@ interface ExerciseAutocompleteProps {
   videoUrl: string | null;
   onChange: (name: string, videoUrl: string | null) => void;
   onBlur: () => void;
+  onSelect?: (name: string, videoUrl: string | null) => void;
   className?: string;
 }
 
@@ -28,6 +29,7 @@ export default function ExerciseAutocomplete({
   videoUrl,
   onChange,
   onBlur,
+  onSelect,
   className,
 }: ExerciseAutocompleteProps) {
   const [open, setOpen] = useState(false);
@@ -92,6 +94,8 @@ export default function ExerciseAutocomplete({
     setInputValue(exercise.name);
     onChange(exercise.name, exercise.video_url);
     setOpen(false);
+    // Salva imediatamente ao selecionar da lista
+    onSelect?.(exercise.name, exercise.video_url);
   };
 
   const handleBlur = () => {

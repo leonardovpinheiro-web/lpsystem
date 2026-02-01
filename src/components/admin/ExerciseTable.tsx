@@ -188,6 +188,27 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
     }
   };
 
+  const handleExerciseSelect = async (exerciseId: string, name: string, videoUrl: string | null) => {
+    // Atualiza estado local imediatamente
+    setExercises(exercises.map(ex => 
+      ex.id === exerciseId ? { ...ex, name, video_url: videoUrl } : ex
+    ));
+
+    // Salva no banco imediatamente
+    const { error } = await supabase
+      .from("exercises")
+      .update({ name, video_url: videoUrl })
+      .eq("id", exerciseId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao salvar exercício",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4">
@@ -227,6 +248,7 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
                   videoUrl={exercise.video_url}
                   onChange={(name, videoUrl) => handleExerciseNameChange(exercise.id, name, videoUrl)}
                   onBlur={() => handleExerciseNameBlur(exercise.id)}
+                  onSelect={(name, videoUrl) => handleExerciseSelect(exercise.id, name, videoUrl)}
                   className="excel-input"
                 />
               </td>
