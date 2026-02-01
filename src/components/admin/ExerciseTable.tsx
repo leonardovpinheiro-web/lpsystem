@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
+import ExerciseAutocomplete from "./ExerciseAutocomplete";
 
 interface Exercise {
   id: string;
@@ -15,6 +16,7 @@ interface Exercise {
   technique: string | null;
   rest_seconds: string | null;
   notes: string | null;
+  video_url: string | null;
 }
 
 interface ExerciseTableProps {
@@ -136,10 +138,34 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
     fetchExercises();
   };
 
-  const updateLocalExercise = (exerciseId: string, field: keyof Exercise, value: string) => {
+  const updateLocalExercise = (exerciseId: string, field: keyof Exercise, value: string | null) => {
     setExercises(exercises.map(ex => 
       ex.id === exerciseId ? { ...ex, [field]: value } : ex
     ));
+  };
+
+  const handleExerciseNameChange = (exerciseId: string, name: string, videoUrl: string | null) => {
+    setExercises(exercises.map(ex => 
+      ex.id === exerciseId ? { ...ex, name, video_url: videoUrl } : ex
+    ));
+  };
+
+  const handleExerciseNameBlur = async (exerciseId: string) => {
+    const exercise = exercises.find(ex => ex.id === exerciseId);
+    if (!exercise) return;
+
+    const { error } = await supabase
+      .from("exercises")
+      .update({ name: exercise.name, video_url: exercise.video_url })
+      .eq("id", exerciseId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao atualizar exercício",
+      });
+    }
   };
 
   if (loading) {
@@ -160,6 +186,7 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
           <tr>
             <th className="w-12">#</th>
             <th className="min-w-[200px]">Exercício</th>
+            <th className="w-16">Vídeo</th>
             <th className="w-20">Séries</th>
             <th className="w-24">Reps</th>
             <th className="w-24">Técnica</th>
@@ -175,12 +202,28 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
                 {index + 1}
               </td>
               <td>
-                <Input
+                <ExerciseAutocomplete
                   value={exercise.name}
-                  onChange={(e) => updateLocalExercise(exercise.id, "name", e.target.value)}
-                  onBlur={(e) => handleUpdateExercise(exercise.id, "name", e.target.value)}
+                  videoUrl={exercise.video_url}
+                  onChange={(name, videoUrl) => handleExerciseNameChange(exercise.id, name, videoUrl)}
+                  onBlur={() => handleExerciseNameBlur(exercise.id)}
                   className="excel-input"
                 />
+              </td>
+              <td className="text-center">
+                {exercise.video_url ? (
+                  <a
+                    href={exercise.video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center text-primary hover:text-primary/80 transition-colors"
+                    title="Ver vídeo do exercício"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
               </td>
               <td>
                 <Input

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      exercise_library: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           created_at: string
@@ -26,6 +50,7 @@ export type Database = {
           sets: string
           technique: string | null
           updated_at: string
+          video_url: string | null
           workout_id: string
         }
         Insert: {
@@ -39,6 +64,7 @@ export type Database = {
           sets: string
           technique?: string | null
           updated_at?: string
+          video_url?: string | null
           workout_id: string
         }
         Update: {
@@ -52,6 +78,7 @@ export type Database = {
           sets?: string
           technique?: string | null
           updated_at?: string
+          video_url?: string | null
           workout_id?: string
         }
         Relationships: [
