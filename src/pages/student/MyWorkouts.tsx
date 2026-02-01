@@ -9,6 +9,7 @@ import {
   ChevronUp,
   Clock,
   Play,
+  Wind,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -35,6 +36,7 @@ interface Program {
   id: string;
   name: string;
   is_active: boolean;
+  aerobic_info: string | null;
   workouts: Workout[];
 }
 
@@ -74,6 +76,7 @@ export default function MyWorkouts() {
         id,
         name,
         is_active,
+        aerobic_info,
         workouts (
           id,
           name,
@@ -171,6 +174,25 @@ export default function MyWorkouts() {
         <h1 className="text-3xl font-bold">Meus Treinos</h1>
         <p className="text-muted-foreground">{program.name}</p>
       </div>
+
+      {/* Aerobic Info Card - Read Only */}
+      {program.aerobic_info && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <Wind className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-primary mb-1">Aeróbico</h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {program.aerobic_info}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-4">
         {program.workouts.map((workout) => (

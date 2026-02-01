@@ -346,6 +346,7 @@ export type Database = {
       }
       training_programs: {
         Row: {
+          aerobic_info: string | null
           created_at: string
           description: string | null
           id: string
@@ -356,6 +357,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aerobic_info?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -366,6 +368,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aerobic_info?: string | null
           created_at?: string
           description?: string | null
           id?: string
