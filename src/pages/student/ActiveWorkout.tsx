@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +12,7 @@ import {
   ChevronUp,
   Play,
   Check,
-  Dumbbell,
+  Save,
 } from "lucide-react";
 import {
   Collapsible,
@@ -48,11 +48,6 @@ interface SetData {
   reps: string;
 }
 
-interface ExerciseEntry {
-  exerciseId: string;
-  sets: SetData[];
-}
-
 export default function ActiveWorkout() {
   const { workoutId } = useParams<{ workoutId: string }>();
   const navigate = useNavigate();
@@ -66,13 +61,28 @@ export default function ActiveWorkout() {
   const [entries, setEntries] = useState<Record<string, SetData[]>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [studentId, setStudentId] = useState<string | null>(null);
+  const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
+  const [currentWeekNumber, setCurrentWeekNumber] = useState<number>(1);
+  
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingSaveRef = useRef<Record<string, SetData[]>>({});
 
   useEffect(() => {
     if (user && workoutId) {
       fetchWorkoutData();
     }
   }, [user, workoutId]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const fetchWorkoutData = async () => {
     try {
@@ -127,24 +137,13 @@ export default function ActiveWorkout() {
         .sort((a, b) => a.order_index - b.order_index);
       setExercises(sortedExercises);
 
-      // Initialize entries with empty sets
-      const initialEntries: Record<string, SetData[]> = {};
-      sortedExercises.forEach((ex) => {
-        const numSets = parseInt(ex.sets) || 4;
-        initialEntries[ex.id] = Array.from({ length: Math.min(numSets, 4) }, () => ({
-          weight: "",
-          reps: "",
-        }));
-      });
-      setEntries(initialEntries);
-
       // Expand first exercise
       if (sortedExercises.length > 0) {
         setExpandedExercise(sortedExercises[0].id);
       }
 
-      // Fetch last week's data for reference
-      const { data: lastWeek } = await supabase
+      // Fetch existing weeks to find or create a current one
+      const { data: existingWeeks } = await supabase
         .from("logbook_weeks")
         .select(`
           id,
@@ -163,28 +162,146 @@ export default function ActiveWorkout() {
         `)
         .eq("workout_id", workoutId)
         .eq("student_id", studentData.id)
-        .order("week_number", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("week_number", { ascending: false });
 
-      if (lastWeek && lastWeek.entries) {
-        const lastData: Record<string, LastWeekData> = {};
-        (lastWeek.entries as any[]).forEach((entry) => {
-          if (entry.original_exercise_id) {
-            lastData[entry.original_exercise_id] = {
-              set1_weight: entry.set1_weight,
-              set1_reps: entry.set1_reps,
-              set2_weight: entry.set2_weight,
-              set2_reps: entry.set2_reps,
-              set3_weight: entry.set3_weight,
-              set3_reps: entry.set3_reps,
-              set4_weight: entry.set4_weight,
-              set4_reps: entry.set4_reps,
-            };
+      let weekId: string;
+      let weekNumber: number;
+      let previousWeekData: Record<string, LastWeekData> = {};
+
+      if (existingWeeks && existingWeeks.length > 0) {
+        const lastWeek = existingWeeks[0];
+        
+        // Check if last week has data
+        const hasData = (lastWeek.entries as any[])?.some((e) => 
+          e.set1_weight !== null || e.set1_reps !== null
+        );
+
+        if (hasData) {
+          // Store last week's data for reference
+          (lastWeek.entries as any[]).forEach((entry) => {
+            if (entry.original_exercise_id) {
+              previousWeekData[entry.original_exercise_id] = {
+                set1_weight: entry.set1_weight,
+                set1_reps: entry.set1_reps,
+                set2_weight: entry.set2_weight,
+                set2_reps: entry.set2_reps,
+                set3_weight: entry.set3_weight,
+                set3_reps: entry.set3_reps,
+                set4_weight: entry.set4_weight,
+                set4_reps: entry.set4_reps,
+              };
+            }
+          });
+          setLastWeekData(previousWeekData);
+
+          // Create new week
+          weekNumber = lastWeek.week_number + 1;
+          const { data: newWeek, error: weekError } = await supabase
+            .from("logbook_weeks")
+            .insert({
+              student_id: studentData.id,
+              program_id: workoutData.program_id,
+              workout_id: workoutData.id,
+              week_number: weekNumber,
+            })
+            .select()
+            .single();
+
+          if (weekError) throw weekError;
+          weekId = newWeek.id;
+
+          // Create entries for new week
+          const entriesData = sortedExercises.map((ex) => ({
+            week_id: weekId,
+            exercise_name: ex.name,
+            exercise_order: ex.order_index,
+            original_exercise_id: ex.id,
+          }));
+          await supabase.from("logbook_week_entries").insert(entriesData);
+        } else {
+          // Use existing empty week
+          weekId = lastWeek.id;
+          weekNumber = lastWeek.week_number;
+
+          // Get previous week's data if exists
+          if (existingWeeks.length > 1) {
+            const prevWeek = existingWeeks[1];
+            (prevWeek.entries as any[])?.forEach((entry) => {
+              if (entry.original_exercise_id) {
+                previousWeekData[entry.original_exercise_id] = {
+                  set1_weight: entry.set1_weight,
+                  set1_reps: entry.set1_reps,
+                  set2_weight: entry.set2_weight,
+                  set2_reps: entry.set2_reps,
+                  set3_weight: entry.set3_weight,
+                  set3_reps: entry.set3_reps,
+                  set4_weight: entry.set4_weight,
+                  set4_reps: entry.set4_reps,
+                };
+              }
+            });
+            setLastWeekData(previousWeekData);
           }
-        });
-        setLastWeekData(lastData);
+
+          // Load existing data into form
+          const initialEntries: Record<string, SetData[]> = {};
+          sortedExercises.forEach((ex) => {
+            const numSets = parseInt(ex.sets) || 4;
+            const existingEntry = (lastWeek.entries as any[])?.find(
+              (e) => e.original_exercise_id === ex.id
+            );
+            
+            initialEntries[ex.id] = Array.from({ length: Math.min(numSets, 4) }, (_, i) => ({
+              weight: existingEntry?.[`set${i + 1}_weight`]?.toString() || "",
+              reps: existingEntry?.[`set${i + 1}_reps`]?.toString() || "",
+            }));
+          });
+          setEntries(initialEntries);
+          setCurrentWeekId(weekId);
+          setCurrentWeekNumber(weekNumber);
+          setLoading(false);
+          return;
+        }
+      } else {
+        // Create first week
+        weekNumber = 1;
+        const { data: newWeek, error: weekError } = await supabase
+          .from("logbook_weeks")
+          .insert({
+            student_id: studentData.id,
+            program_id: workoutData.program_id,
+            workout_id: workoutData.id,
+            week_number: weekNumber,
+          })
+          .select()
+          .single();
+
+        if (weekError) throw weekError;
+        weekId = newWeek.id;
+
+        // Create entries
+        const entriesData = sortedExercises.map((ex) => ({
+          week_id: weekId,
+          exercise_name: ex.name,
+          exercise_order: ex.order_index,
+          original_exercise_id: ex.id,
+        }));
+        await supabase.from("logbook_week_entries").insert(entriesData);
       }
+
+      setCurrentWeekId(weekId);
+      setCurrentWeekNumber(weekNumber);
+
+      // Initialize entries with empty sets
+      const initialEntries: Record<string, SetData[]> = {};
+      sortedExercises.forEach((ex) => {
+        const numSets = parseInt(ex.sets) || 4;
+        initialEntries[ex.id] = Array.from({ length: Math.min(numSets, 4) }, () => ({
+          weight: "",
+          reps: "",
+        }));
+      });
+      setEntries(initialEntries);
 
       setLoading(false);
     } catch (error) {
@@ -193,6 +310,51 @@ export default function ActiveWorkout() {
     }
   };
 
+  // Auto-save function
+  const saveToDatabase = useCallback(async (exerciseId: string, setsData: SetData[]) => {
+    if (!currentWeekId) return;
+
+    setAutoSaving(true);
+    try {
+      const updateData: Record<string, number | null> = {};
+      setsData.forEach((set, index) => {
+        const setNum = index + 1;
+        if (setNum <= 4) {
+          updateData[`set${setNum}_weight`] = set.weight ? parseFloat(set.weight) : null;
+          updateData[`set${setNum}_reps`] = set.reps ? parseInt(set.reps) : null;
+        }
+      });
+
+      await supabase
+        .from("logbook_week_entries")
+        .update(updateData)
+        .eq("week_id", currentWeekId)
+        .eq("original_exercise_id", exerciseId);
+
+    } catch (error) {
+      console.error("Error auto-saving:", error);
+    } finally {
+      setAutoSaving(false);
+    }
+  }, [currentWeekId]);
+
+  // Debounced save
+  const debouncedSave = useCallback((exerciseId: string, setsData: SetData[]) => {
+    pendingSaveRef.current[exerciseId] = setsData;
+    
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      // Save all pending changes
+      Object.entries(pendingSaveRef.current).forEach(([exId, data]) => {
+        saveToDatabase(exId, data);
+      });
+      pendingSaveRef.current = {};
+    }, 500);
+  }, [saveToDatabase]);
+
   const updateSetValue = (exerciseId: string, setIndex: number, field: "weight" | "reps", value: string) => {
     setEntries((prev) => {
       const exerciseSets = [...(prev[exerciseId] || [])];
@@ -200,6 +362,10 @@ export default function ActiveWorkout() {
         exerciseSets[setIndex] = { weight: "", reps: "" };
       }
       exerciseSets[setIndex] = { ...exerciseSets[setIndex], [field]: value };
+      
+      // Trigger auto-save
+      debouncedSave(exerciseId, exerciseSets);
+      
       return { ...prev, [exerciseId]: exerciseSets };
     });
   };
@@ -213,93 +379,16 @@ export default function ActiveWorkout() {
   };
 
   const finishWorkout = async () => {
-    if (!workout || !studentId) return;
+    if (!workout || !currentWeekId) return;
 
     setSaving(true);
     try {
-      // Check if there's already a week for today or find the next week number
-      const { data: existingWeeks } = await supabase
-        .from("logbook_weeks")
-        .select("id, week_number")
-        .eq("workout_id", workout.id)
-        .eq("student_id", studentId)
-        .order("week_number", { ascending: false });
-
-      let weekId: string;
-      let weekNumber: number;
-
-      // Check if the last week has empty entries (we can fill it)
-      if (existingWeeks && existingWeeks.length > 0) {
-        const lastWeekId = existingWeeks[0].id;
-        weekNumber = existingWeeks[0].week_number;
-
-        // Check if entries are empty
-        const { data: existingEntries } = await supabase
-          .from("logbook_week_entries")
-          .select("id, set1_weight")
-          .eq("week_id", lastWeekId)
-          .limit(1);
-
-        const hasData = existingEntries?.some((e) => e.set1_weight !== null);
-
-        if (hasData) {
-          // Create new week
-          weekNumber = weekNumber + 1;
-          const { data: newWeek, error: weekError } = await supabase
-            .from("logbook_weeks")
-            .insert({
-              student_id: studentId,
-              program_id: workout.program_id,
-              workout_id: workout.id,
-              week_number: weekNumber,
-            })
-            .select()
-            .single();
-
-          if (weekError) throw weekError;
-          weekId = newWeek.id;
-
-          // Create empty entries
-          const entriesData = exercises.map((ex) => ({
-            week_id: weekId,
-            exercise_name: ex.name,
-            exercise_order: ex.order_index,
-            original_exercise_id: ex.id,
-          }));
-
-          await supabase.from("logbook_week_entries").insert(entriesData);
-        } else {
-          weekId = lastWeekId;
-        }
-      } else {
-        // Create first week
-        weekNumber = 1;
-        const { data: newWeek, error: weekError } = await supabase
-          .from("logbook_weeks")
-          .insert({
-            student_id: studentId,
-            program_id: workout.program_id,
-            workout_id: workout.id,
-            week_number: weekNumber,
-          })
-          .select()
-          .single();
-
-        if (weekError) throw weekError;
-        weekId = newWeek.id;
-
-        // Create entries
-        const entriesData = exercises.map((ex) => ({
-          week_id: weekId,
-          exercise_name: ex.name,
-          exercise_order: ex.order_index,
-          original_exercise_id: ex.id,
-        }));
-
-        await supabase.from("logbook_week_entries").insert(entriesData);
+      // Save any pending changes immediately
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
-
-      // Update entries with the data
+      
+      // Final save for all exercises
       for (const exercise of exercises) {
         const exerciseEntries = entries[exercise.id] || [];
         const updateData: Record<string, number | null> = {};
@@ -316,14 +405,14 @@ export default function ActiveWorkout() {
           await supabase
             .from("logbook_week_entries")
             .update(updateData)
-            .eq("week_id", weekId)
+            .eq("week_id", currentWeekId)
             .eq("original_exercise_id", exercise.id);
         }
       }
 
       toast({
         title: "Treino finalizado!",
-        description: `Dados salvos na Semana ${weekNumber} do logbook.`,
+        description: `Dados salvos na Semana ${currentWeekNumber} do logbook.`,
       });
 
       navigate("/logbook");
@@ -385,10 +474,18 @@ export default function ActiveWorkout() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">{workout.name}</h1>
-          <p className="text-muted-foreground">Registre suas séries</p>
+          <p className="text-muted-foreground">
+            Semana {currentWeekNumber} • Registre suas séries
+          </p>
         </div>
+        {autoSaving && (
+          <div className="flex items-center gap-1 text-muted-foreground text-sm">
+            <Save className="w-4 h-4 animate-pulse" />
+            <span>Salvando...</span>
+          </div>
+        )}
       </div>
 
       {/* Exercise list */}
