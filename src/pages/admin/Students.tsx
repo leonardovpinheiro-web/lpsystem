@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, User, MoreVertical, Loader2, Mail, ClipboardList } from "lucide-react";
+import { Plus, Search, User, MoreVertical, Loader2, Mail, ClipboardList, Dumbbell } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -345,22 +345,32 @@ export default function Students() {
                       </p>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate(`/students/${student.id}/logbook`)}>
-                        <ClipboardList className="w-4 h-4 mr-2" />
-                        Ver Logbook
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openEditDialog(student)}>
-                        Editar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/students/${student.id}/workouts`)}
+                    >
+                      <Dumbbell className="w-4 h-4 mr-1" />
+                      Treino
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => navigate(`/students/${student.id}/logbook`)}>
+                          <ClipboardList className="w-4 h-4 mr-2" />
+                          Ver Logbook
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditDialog(student)}>
+                          Editar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <span

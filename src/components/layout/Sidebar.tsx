@@ -28,7 +28,6 @@ export default function Sidebar() {
   const adminLinks = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/students", label: "Alunos", icon: Users },
-    { href: "/workouts", label: "Treinos", icon: Dumbbell },
     { href: "/guides", label: "Guias", icon: BookOpen },
   ];
 
