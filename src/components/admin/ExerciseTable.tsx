@@ -73,7 +73,7 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
       ? Math.max(...exercises.map(e => e.order_index)) 
       : -1;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("exercises")
       .insert({
         workout_id: workoutId,
@@ -81,7 +81,9 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
         name: "Novo Exercício",
         sets: "3",
         reps: "8-12",
-      });
+      })
+      .select()
+      .single();
 
     if (error) {
       toast({
@@ -89,8 +91,9 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
         title: "Erro",
         description: "Erro ao adicionar exercício",
       });
-    } else {
-      fetchExercises();
+    } else if (data) {
+      // Adiciona ao estado local sem refetch para preservar dados
+      setExercises(prev => [...prev, data]);
     }
   };
 
@@ -189,12 +192,7 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
   };
 
   const handleExerciseSelect = async (exerciseId: string, name: string, videoUrl: string | null) => {
-    // Atualiza estado local imediatamente
-    setExercises(exercises.map(ex => 
-      ex.id === exerciseId ? { ...ex, name, video_url: videoUrl } : ex
-    ));
-
-    // Salva no banco imediatamente
+    // Salva no banco PRIMEIRO, depois atualiza o estado local
     const { error } = await supabase
       .from("exercises")
       .update({ name, video_url: videoUrl })
@@ -206,6 +204,11 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
         title: "Erro",
         description: "Erro ao salvar exercício",
       });
+    } else {
+      // Atualiza estado local somente após salvar com sucesso
+      setExercises(prev => prev.map(ex => 
+        ex.id === exerciseId ? { ...ex, name, video_url: videoUrl } : ex
+      ));
     }
   };
 
