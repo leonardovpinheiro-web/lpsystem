@@ -310,7 +310,14 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-primary hover:text-primary/80"
-                    onClick={() => setVideoModal({ open: true, url: exercise.video_url!, name: exercise.name })}
+                    onClick={() => {
+                      const url = exercise.video_url!;
+                      if (url.includes("vimeo.com")) {
+                        window.open(url, "_blank", "noopener,noreferrer");
+                        return;
+                      }
+                      setVideoModal({ open: true, url, name: exercise.name });
+                    }}
                     title="Ver vídeo do exercício"
                   >
                     <Play className="w-4 h-4" />
