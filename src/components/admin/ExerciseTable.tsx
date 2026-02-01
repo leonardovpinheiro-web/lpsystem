@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, ArrowUp, ArrowDown, Play, Loader2 } from "lucide-react";
 import ExerciseAutocomplete from "./ExerciseAutocomplete";
+import VideoPlayerModal from "@/components/VideoPlayerModal";
 
 interface Exercise {
   id: string;
@@ -37,6 +38,9 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingFields, setSavingFields] = useState<Set<string>>(new Set());
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
+  const [selectedExerciseName, setSelectedExerciseName] = useState<string>("");
   const { toast } = useToast();
   
   // Track pending saves with their timeouts
@@ -354,6 +358,13 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
 
   const isSaving = savingFields.size > 0;
 
+  const openVideo = (url: string | null, exerciseName?: string) => {
+    if (!url) return;
+    setSelectedVideoUrl(url);
+    setSelectedExerciseName(exerciseName || "");
+    setVideoModalOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="p-4">
@@ -409,9 +420,7 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-primary hover:text-primary/80"
-                    onClick={() => {
-                      window.open(exercise.video_url!, "_blank", "noopener,noreferrer");
-                    }}
+                    onClick={() => openVideo(exercise.video_url, exercise.name)}
                     title="Ver vídeo do exercício"
                   >
                     <Play className="w-4 h-4" />

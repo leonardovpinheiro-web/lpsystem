@@ -12,6 +12,7 @@ import {
   Wind,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import VideoPlayerModal from "@/components/VideoPlayerModal";
 
 interface Workout {
   id: string;
@@ -45,6 +46,9 @@ export default function MyWorkouts() {
   const [program, setProgram] = useState<Program | null>(null);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
+  const [selectedExerciseName, setSelectedExerciseName] = useState<string>("");
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -124,6 +128,13 @@ export default function MyWorkouts() {
 
   const goToLogbook = () => {
     navigate(`/logbook`);
+  };
+
+  const openVideo = (url: string | null, exerciseName?: string) => {
+    if (!url) return;
+    setSelectedVideoUrl(url);
+    setSelectedExerciseName(exerciseName || "");
+    setVideoModalOpen(true);
   };
 
   if (loading) {
@@ -267,7 +278,7 @@ export default function MyWorkouts() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 text-primary hover:text-primary/80"
-                                onClick={() => window.open(exercise.video_url!, "_blank", "noopener,noreferrer")}
+                                onClick={() => openVideo(exercise.video_url, exercise.name)}
                                 title="Ver vídeo do exercício"
                               >
                                 <Play className="w-4 h-4" />
@@ -298,6 +309,12 @@ export default function MyWorkouts() {
         ))}
       </div>
 
+      <VideoPlayerModal
+        open={videoModalOpen}
+        onOpenChange={setVideoModalOpen}
+        videoUrl={selectedVideoUrl}
+        title={selectedExerciseName}
+      />
     </div>
   );
 }
