@@ -3,13 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -20,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, User, MoreVertical } from "lucide-react";
+import { Plus, Search, User, MoreVertical, Loader2, Mail } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,12 +44,19 @@ export default function Students() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const { toast } = useToast();
 
   // Form state for editing
   const [editStatus, setEditStatus] = useState<"active" | "paused">("active");
   const [editNotes, setEditNotes] = useState("");
+
+  // Form state for adding new student
+  const [newStudentName, setNewStudentName] = useState("");
+  const [newStudentEmail, setNewStudentEmail] = useState("");
+  const [newStudentPassword, setNewStudentPassword] = useState("");
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -78,6 +84,13 @@ export default function Students() {
 
     // Fetch profiles for each student
     const userIds = studentsData.map(s => s.user_id);
+    
+    if (userIds.length === 0) {
+      setStudents([]);
+      setLoading(false);
+      return;
+    }
+
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
       .select("user_id, full_name, email")
@@ -130,6 +143,129 @@ export default function Students() {
     }
   };
 
+  const handleAddStudent = async () => {
+    if (!newStudentName.trim() || !newStudentEmail.trim() || !newStudentPassword.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Preencha todos os campos",
+      });
+      return;
+    }
+
+    if (newStudentPassword.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres",
+      });
+      return;
+    }
+
+    setIsAddingStudent(true);
+
+    try {
+      // Create user via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newStudentEmail,
+        password: newStudentPassword,
+        options: {
+          data: {
+            full_name: newStudentName,
+          },
+        },
+      });
+
+      if (authError) {
+        let message = "Erro ao criar aluno";
+        if (authError.message.includes("User already registered")) {
+          message = "Este email já está cadastrado";
+        }
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: message,
+        });
+        setIsAddingStudent(false);
+        return;
+      }
+
+      if (!authData.user) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Erro ao criar usuário",
+        });
+        setIsAddingStudent(false);
+        return;
+      }
+
+      // Create profile
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert({
+          user_id: authData.user.id,
+          full_name: newStudentName,
+          email: newStudentEmail,
+        });
+
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+      }
+
+      // Create student record
+      const { error: studentError } = await supabase
+        .from("students")
+        .insert({
+          user_id: authData.user.id,
+          status: "active",
+        });
+
+      if (studentError) {
+        console.error("Error creating student:", studentError);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Erro ao criar registro de aluno",
+        });
+        setIsAddingStudent(false);
+        return;
+      }
+
+      // Create student role
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: authData.user.id,
+          role: "student",
+        });
+
+      if (roleError) {
+        console.error("Error creating role:", roleError);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Aluno cadastrado com sucesso! Um email de confirmação foi enviado.",
+      });
+
+      setIsAddDialogOpen(false);
+      setNewStudentName("");
+      setNewStudentEmail("");
+      setNewStudentPassword("");
+      fetchStudents();
+    } catch (error) {
+      console.error("Error adding student:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro inesperado ao criar aluno",
+      });
+    } finally {
+      setIsAddingStudent(false);
+    }
+  };
+
   const filteredStudents = students.filter((student) => {
     const name = student.profile?.full_name?.toLowerCase() || "";
     const email = student.profile?.email?.toLowerCase() || "";
@@ -154,6 +290,10 @@ export default function Students() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Aluno
+        </Button>
       </div>
 
       {loading ? (
@@ -171,11 +311,17 @@ export default function Students() {
           <CardContent className="p-12 text-center">
             <User className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">Nenhum aluno encontrado</h3>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-4">
               {searchQuery
                 ? "Nenhum aluno corresponde à busca"
-                : "Quando alunos se cadastrarem, aparecerão aqui"}
+                : "Cadastre seu primeiro aluno para começar"}
             </p>
+            {!searchQuery && (
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Cadastrar Aluno
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -230,6 +376,7 @@ export default function Students() {
         </div>
       )}
 
+      {/* Edit Student Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -269,6 +416,72 @@ export default function Students() {
                 Cancelar
               </Button>
               <Button onClick={handleUpdateStudent}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Student Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="student-name">Nome completo</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="student-name"
+                  placeholder="Nome do aluno"
+                  className="pl-9"
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="student-email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="student-email"
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  className="pl-9"
+                  value={newStudentEmail}
+                  onChange={(e) => setNewStudentEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="student-password">Senha inicial</Label>
+              <Input
+                id="student-password"
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={newStudentPassword}
+                onChange={(e) => setNewStudentPassword(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                O aluno receberá um email para confirmar a conta
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isAddingStudent}>
+                Cancelar
+              </Button>
+              <Button onClick={handleAddStudent} disabled={isAddingStudent}>
+                {isAddingStudent ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Cadastrando...
+                  </>
+                ) : (
+                  "Cadastrar"
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>
