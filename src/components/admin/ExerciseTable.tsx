@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ArrowUp, ArrowDown, Play } from "lucide-react";
+import { useDebouncedCallback } from "@/hooks/use-debounce";
+import { Plus, Trash2, ArrowUp, ArrowDown, Play, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ interface ExerciseTableProps {
 export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingFields, setSavingFields] = useState<Set<string>>(new Set());
   const [videoModal, setVideoModal] = useState<{ open: boolean; url: string; name: string }>({
     open: false,
     url: "",
@@ -92,28 +94,55 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
         description: "Erro ao adicionar exercício",
       });
     } else if (data) {
-      // Adiciona ao estado local sem refetch para preservar dados
       setExercises(prev => [...prev, data]);
     }
   };
 
-  const handleUpdateExercise = async (
+  // Save function that actually persists to database
+  const saveExerciseField = useCallback(async (
     exerciseId: string,
     field: keyof Exercise,
-    value: string
+    value: string | null
   ) => {
+    const fieldKey = `${exerciseId}-${field}`;
+    setSavingFields(prev => new Set(prev).add(fieldKey));
+
     const { error } = await supabase
       .from("exercises")
       .update({ [field]: value })
       .eq("id", exerciseId);
 
+    setSavingFields(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(fieldKey);
+      return newSet;
+    });
+
     if (error) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Erro ao atualizar exercício",
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a alteração",
       });
     }
+  }, [toast]);
+
+  // Debounced save - triggers 500ms after last keystroke
+  const debouncedSave = useDebouncedCallback(saveExerciseField, 500);
+
+  // Update local state and trigger debounced save
+  const handleFieldChange = (
+    exerciseId: string,
+    field: keyof Exercise,
+    value: string | null
+  ) => {
+    // Update local state immediately for responsive UI
+    setExercises(prev => prev.map(ex => 
+      ex.id === exerciseId ? { ...ex, [field]: value } : ex
+    ));
+    
+    // Trigger debounced save
+    debouncedSave(exerciseId, field, value);
   };
 
   const handleDeleteExercise = async (exerciseId: string) => {
@@ -129,7 +158,8 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
         description: "Erro ao excluir exercício",
       });
     } else {
-      fetchExercises();
+      // Remove from local state immediately
+      setExercises(prev => prev.filter(ex => ex.id !== exerciseId));
     }
   };
 
@@ -146,8 +176,16 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
     const otherExercise = exercises[newIndex];
     const currentExercise = exercises[currentIndex];
 
-    // Swap order_index values
-    await Promise.all([
+    // Update local state immediately for responsive UI
+    const newExercises = [...exercises];
+    const tempOrder = currentExercise.order_index;
+    newExercises[currentIndex] = { ...currentExercise, order_index: otherExercise.order_index };
+    newExercises[newIndex] = { ...otherExercise, order_index: tempOrder };
+    newExercises.sort((a, b) => a.order_index - b.order_index);
+    setExercises(newExercises);
+
+    // Save to database immediately
+    const [result1, result2] = await Promise.all([
       supabase
         .from("exercises")
         .update({ order_index: otherExercise.order_index })
@@ -158,17 +196,19 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
         .eq("id", otherExercise.id),
     ]);
 
-    fetchExercises();
-  };
-
-  const updateLocalExercise = (exerciseId: string, field: keyof Exercise, value: string | null) => {
-    setExercises(exercises.map(ex => 
-      ex.id === exerciseId ? { ...ex, [field]: value } : ex
-    ));
+    if (result1.error || result2.error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao reordenar exercício",
+      });
+      // Revert on error
+      fetchExercises();
+    }
   };
 
   const handleExerciseNameChange = (exerciseId: string, name: string, videoUrl: string | null) => {
-    setExercises(exercises.map(ex => 
+    setExercises(prev => prev.map(ex => 
       ex.id === exerciseId ? { ...ex, name, video_url: videoUrl } : ex
     ));
   };
@@ -192,12 +232,12 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
   };
 
   const handleExerciseSelect = async (exerciseId: string, name: string, videoUrl: string | null) => {
-    // Atualiza estado local IMEDIATAMENTE para mostrar o ícone de vídeo
+    // Update local state immediately
     setExercises(prev => prev.map(ex => 
       ex.id === exerciseId ? { ...ex, name, video_url: videoUrl } : ex
     ));
 
-    // Salva no banco
+    // Save to database immediately
     const { error } = await supabase
       .from("exercises")
       .update({ name, video_url: videoUrl })
@@ -209,15 +249,11 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
         title: "Erro",
         description: "Erro ao salvar exercício",
       });
-      // Reverte em caso de erro - refetch do banco
-      const { data } = await supabase
-        .from("exercises")
-        .select("*")
-        .eq("workout_id", workoutId)
-        .order("order_index", { ascending: true });
-      if (data) setExercises(data);
+      fetchExercises();
     }
   };
+
+  const isSaving = savingFields.size > 0;
 
   if (loading) {
     return (
@@ -232,6 +268,12 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
 
   return (
     <div className="overflow-x-auto">
+      {isSaving && (
+        <div className="absolute top-2 right-2 flex items-center gap-1 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Salvando...
+        </div>
+      )}
       <table className="excel-table min-w-full">
         <thead>
           <tr>
@@ -280,24 +322,21 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
               <td>
                 <Input
                   value={exercise.sets}
-                  onChange={(e) => updateLocalExercise(exercise.id, "sets", e.target.value)}
-                  onBlur={(e) => handleUpdateExercise(exercise.id, "sets", e.target.value)}
+                  onChange={(e) => handleFieldChange(exercise.id, "sets", e.target.value)}
                   className="excel-input text-center"
                 />
               </td>
               <td>
                 <Input
                   value={exercise.reps}
-                  onChange={(e) => updateLocalExercise(exercise.id, "reps", e.target.value)}
-                  onBlur={(e) => handleUpdateExercise(exercise.id, "reps", e.target.value)}
+                  onChange={(e) => handleFieldChange(exercise.id, "reps", e.target.value)}
                   className="excel-input text-center"
                 />
               </td>
               <td>
                 <Input
                   value={exercise.technique || ""}
-                  onChange={(e) => updateLocalExercise(exercise.id, "technique", e.target.value)}
-                  onBlur={(e) => handleUpdateExercise(exercise.id, "technique", e.target.value)}
+                  onChange={(e) => handleFieldChange(exercise.id, "technique", e.target.value || null)}
                   className="excel-input text-center"
                   placeholder="-"
                 />
@@ -305,8 +344,7 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
               <td>
                 <Input
                   value={exercise.rest_seconds || ""}
-                  onChange={(e) => updateLocalExercise(exercise.id, "rest_seconds", e.target.value)}
-                  onBlur={(e) => handleUpdateExercise(exercise.id, "rest_seconds", e.target.value)}
+                  onChange={(e) => handleFieldChange(exercise.id, "rest_seconds", e.target.value || null)}
                   className="excel-input text-center"
                   placeholder="-"
                 />
@@ -314,8 +352,7 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
               <td>
                 <Input
                   value={exercise.notes || ""}
-                  onChange={(e) => updateLocalExercise(exercise.id, "notes", e.target.value)}
-                  onBlur={(e) => handleUpdateExercise(exercise.id, "notes", e.target.value)}
+                  onChange={(e) => handleFieldChange(exercise.id, "notes", e.target.value || null)}
                   className="excel-input"
                   placeholder="-"
                 />
