@@ -3,12 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
 import {
   Dumbbell,
   ChevronDown,
   ChevronUp,
-  ClipboardList,
   Clock,
   Play,
 } from "lucide-react";
@@ -46,7 +44,6 @@ export default function MyWorkouts() {
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -201,13 +198,12 @@ export default function MyWorkouts() {
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
-                    goToLogbook();
+                    navigate(`/workout/${workout.id}`);
                   }}
                   size="sm"
-                  variant="outline"
                 >
-                  <ClipboardList className="w-4 h-4 mr-1" />
-                  Registrar
+                  <Play className="w-4 h-4 mr-1" />
+                  Iniciar Treino
                 </Button>
                 {expandedWorkout === workout.id ? (
                   <ChevronUp className="w-5 h-5 text-muted-foreground" />

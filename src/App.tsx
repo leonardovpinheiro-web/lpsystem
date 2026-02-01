@@ -21,6 +21,7 @@ import GuidesAdmin from "./pages/admin/Guides";
 // Student Pages
 import MyWorkouts from "./pages/student/MyWorkouts";
 import Logbook from "./pages/student/Logbook";
+import ActiveWorkout from "./pages/student/ActiveWorkout";
 import GuidesStudent from "./pages/student/Guides";
 
 // Layout
@@ -137,6 +138,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             {!isAdmin ? <Logbook /> : <Navigate to="/" replace />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workout/:workoutId"
+        element={
+          <ProtectedRoute>
+            {!isAdmin ? <ActiveWorkout /> : <Navigate to="/" replace />}
           </ProtectedRoute>
         }
       />
