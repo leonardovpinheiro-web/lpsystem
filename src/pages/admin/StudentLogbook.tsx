@@ -253,78 +253,81 @@ export default function StudentLogbook() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {weeks.map((week) => (
-            <Card key={week.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Semana {week.week_number}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2 font-medium text-muted-foreground min-w-[180px]">
-                          Exercício
-                        </th>
-                        <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                          Série 1
-                        </th>
-                        <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                          Série 2
-                        </th>
-                        <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                          Série 3
-                        </th>
-                        <th className="text-center p-2 font-medium text-muted-foreground" colSpan={2}>
-                          Série 4
-                        </th>
-                      </tr>
-                      <tr className="border-b bg-muted/30">
-                        <th></th>
-                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Kg</th>
-                        <th className="text-center p-1 text-xs text-muted-foreground font-normal">Reps</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {week.entries.map((entry, index) => (
-                        <tr
-                          key={entry.id}
-                          className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}
-                        >
-                          <td className="p-2 font-medium">
-                            <span className="inline-flex items-center gap-2">
-                              <span className="w-5 h-5 bg-primary/10 rounded flex items-center justify-center text-xs font-medium text-primary">
-                                {entry.exercise_order + 1}
-                              </span>
-                              {entry.exercise_name}
-                            </span>
-                          </td>
-                          {[1, 2, 3, 4].map((setNum) => (
-                            <React.Fragment key={`${entry.id}-set${setNum}`}>
-                              <td className="p-2 text-center">
-                                {entry[`set${setNum}_weight` as keyof LogbookEntry] ?? "-"}
-                              </td>
-                              <td className="p-2 text-center">
-                                {entry[`set${setNum}_reps` as keyof LogbookEntry] ?? "-"}
-                              </td>
-                            </React.Fragment>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+        <Card>
+          <CardContent className="p-4">
+            <div className="overflow-x-auto">
+              <div className="flex gap-0">
+                {/* Fixed exercise column */}
+                <div className="flex-shrink-0 min-w-[180px] border-r border-border">
+                  <div className="h-14 border-b border-border" />
+                  <div className="h-8 border-b border-border bg-muted/30" />
+                  {weeks[0]?.entries.map((exercise, index) => (
+                    <div
+                      key={exercise.exercise_name}
+                      className={`h-12 flex items-center px-3 border-b border-border ${
+                        index % 2 === 0 ? "bg-background" : "bg-muted/20"
+                      }`}
+                    >
+                      <span className="inline-flex items-center gap-2 font-medium text-sm">
+                        <span className="w-5 h-5 bg-primary/10 rounded flex items-center justify-center text-xs font-medium text-primary">
+                          {exercise.exercise_order + 1}
+                        </span>
+                        <span className="truncate max-w-[120px]">{exercise.exercise_name}</span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+
+                {/* Scrollable weeks columns */}
+                <div className="flex overflow-x-auto">
+                  {weeks.map((week) => (
+                    <div key={week.id} className="flex-shrink-0 min-w-[320px] border-r border-border last:border-r-0">
+                      {/* Week header */}
+                      <div className="h-14 flex items-center justify-center border-b border-border bg-muted/50">
+                        <h3 className="text-lg font-bold">Semana {week.week_number}</h3>
+                      </div>
+                      
+                      {/* Series headers */}
+                      <div className="h-8 flex border-b border-border bg-muted/30">
+                        {[1, 2, 3, 4].map((setNum) => (
+                          <div key={setNum} className="flex-1 flex items-center justify-center gap-1 border-r border-border last:border-r-0">
+                            <span className="text-xs text-muted-foreground font-medium">S{setNum}</span>
+                            <span className="text-[10px] text-muted-foreground">(kg/rep)</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Exercise rows */}
+                      {week.entries.map((entry, index) => (
+                        <div
+                          key={entry.id}
+                          className={`h-12 flex ${
+                            index % 2 === 0 ? "bg-background" : "bg-muted/20"
+                          }`}
+                        >
+                          {[1, 2, 3, 4].map((setNum) => (
+                            <div
+                              key={`set-${setNum}`}
+                              className="flex-1 flex items-center justify-center gap-2 border-r border-border last:border-r-0 px-2"
+                            >
+                              <span className="text-sm font-medium">
+                                {entry[`set${setNum}_weight` as keyof LogbookEntry] ?? "-"}
+                              </span>
+                              <span className="text-xs text-muted-foreground">/</span>
+                              <span className="text-sm">
+                                {entry[`set${setNum}_reps` as keyof LogbookEntry] ?? "-"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
