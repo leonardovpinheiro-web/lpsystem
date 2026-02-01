@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useDebouncedCallback } from "@/hooks/use-debounce";
 import {
   ArrowLeft,
   Plus,
   Trash2,
   GripVertical,
-  Save,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
@@ -137,7 +137,8 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
     }
   };
 
-  const handleRenameWorkout = async (workoutId: string, newName: string) => {
+  // Save workout name to database
+  const saveWorkoutName = useCallback(async (workoutId: string, newName: string) => {
     const { error } = await supabase
       .from("workouts")
       .update({ name: newName })
@@ -149,9 +150,20 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
         title: "Erro",
         description: "Erro ao renomear treino",
       });
-    } else {
-      fetchWorkouts();
     }
+  }, [toast]);
+
+  // Debounced save for workout name
+  const debouncedSaveWorkoutName = useDebouncedCallback(saveWorkoutName, 500);
+
+  // Update local state and trigger debounced save
+  const handleRenameWorkout = (workoutId: string, newName: string) => {
+    // Update local state immediately
+    setWorkouts(prev => prev.map(w => 
+      w.id === workoutId ? { ...w, name: newName } : w
+    ));
+    // Trigger debounced save
+    debouncedSaveWorkoutName(workoutId, newName);
   };
 
   return (
