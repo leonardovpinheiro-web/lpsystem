@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { VideoModal } from "@/components/logbook/VideoModal";
+
 
 interface Workout {
   id: string;
@@ -68,11 +68,6 @@ export default function StudentLogbook() {
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [weeks, setWeeks] = useState<LogbookWeek[]>([]);
   const [loading, setLoading] = useState(true);
-  const [videoModal, setVideoModal] = useState<{ open: boolean; url: string | null; name: string }>({
-    open: false,
-    url: null,
-    name: "",
-  });
 
   useEffect(() => {
     if (studentId) {
@@ -228,16 +223,9 @@ export default function StudentLogbook() {
     setWeeks(formattedWeeks);
   };
 
-  const openVideoModal = (url: string | null, name: string) => {
+  const openVideo = (url: string | null) => {
     if (!url) return;
-
-    // Vimeo: abrir diretamente no link externo (evita "vídeo não disponível" no embed)
-    if (url.includes("vimeo.com")) {
-      window.open(url, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    setVideoModal({ open: true, url, name });
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   // Use exercises from the current workout prescription (always up to date)
@@ -358,7 +346,7 @@ export default function StudentLogbook() {
                       </span>
                       {exercise.video_url && (
                         <button
-                          onClick={() => openVideoModal(exercise.video_url, exercise.name)}
+                          onClick={() => openVideo(exercise.video_url)}
                           className="p-1 rounded hover:bg-primary/10 transition-colors"
                           title="Ver vídeo de execução"
                         >
@@ -430,12 +418,6 @@ export default function StudentLogbook() {
         </Card>
       )}
 
-      <VideoModal
-        open={videoModal.open}
-        onOpenChange={(open) => setVideoModal((prev) => ({ ...prev, open }))}
-        videoUrl={videoModal.url}
-        exerciseName={videoModal.name}
-      />
     </div>
   );
 }

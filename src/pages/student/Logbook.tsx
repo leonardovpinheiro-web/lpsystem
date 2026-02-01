@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { VideoModal } from "@/components/logbook/VideoModal";
+
 
 interface Workout {
   id: string;
@@ -64,11 +64,6 @@ export default function Logbook() {
   const [activeWeek, setActiveWeek] = useState<string>("1");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [videoModal, setVideoModal] = useState<{ open: boolean; url: string | null; name: string }>({
-    open: false,
-    url: null,
-    name: "",
-  });
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -406,16 +401,9 @@ export default function Logbook() {
     return week.entries.find((e) => e.original_exercise_id === exerciseId);
   };
 
-  const openVideoModal = (url: string | null, name: string) => {
+  const openVideo = (url: string | null) => {
     if (!url) return;
-
-    // Vimeo: abrir diretamente no link externo (evita "vídeo não disponível" no embed)
-    if (url.includes("vimeo.com")) {
-      window.open(url, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    setVideoModal({ open: true, url, name });
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -485,7 +473,7 @@ export default function Logbook() {
                       </span>
                       {exercise.video_url && (
                         <button
-                          onClick={() => openVideoModal(exercise.video_url, exercise.name)}
+                          onClick={() => openVideo(exercise.video_url)}
                           className="p-1 rounded hover:bg-primary/10 transition-colors"
                           title="Ver vídeo de execução"
                         >
@@ -585,12 +573,6 @@ export default function Logbook() {
         </Card>
       )}
 
-      <VideoModal
-        open={videoModal.open}
-        onOpenChange={(open) => setVideoModal((prev) => ({ ...prev, open }))}
-        videoUrl={videoModal.url}
-        exerciseName={videoModal.name}
-      />
     </div>
   );
 }
