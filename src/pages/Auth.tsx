@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Dumbbell, Loader2, Mail, Lock, User } from "lucide-react";
+import { Loader2, Mail, Lock, User } from "lucide-react";
+import lpLogo from "@/assets/lp-logo.png";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -178,8 +179,8 @@ export default function Auth() {
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary rounded-xl flex items-center justify-center mb-4">
-              <Dumbbell className="w-6 h-6 text-primary-foreground" />
+            <div className="mx-auto w-16 h-16 rounded-xl flex items-center justify-center mb-4">
+              <img src={lpLogo} alt="LP Logo" className="w-full h-full object-contain" />
             </div>
             <CardTitle className="text-2xl">Recuperar Senha</CardTitle>
             <CardDescription>
@@ -225,8 +226,8 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-primary rounded-xl flex items-center justify-center mb-4">
-            <Dumbbell className="w-6 h-6 text-primary-foreground" />
+          <div className="mx-auto w-16 h-16 rounded-xl flex items-center justify-center mb-4">
+            <img src={lpLogo} alt="LP Logo" className="w-full h-full object-contain" />
           </div>
           <CardTitle className="text-2xl">Sistema de Treinos</CardTitle>
           <CardDescription>

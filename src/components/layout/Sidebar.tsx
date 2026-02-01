@@ -13,6 +13,7 @@ import {
   Menu,
   Library,
 } from "lucide-react";
+import lpLogo from "@/assets/lp-logo.png";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -45,8 +46,8 @@ export default function Sidebar() {
     <>
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-sidebar-primary rounded-xl flex items-center justify-center flex-shrink-0">
-            <Dumbbell className="w-5 h-5 text-sidebar-primary-foreground" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <img src={lpLogo} alt="LP Logo" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
