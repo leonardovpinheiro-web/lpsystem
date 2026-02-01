@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Dumbbell, ChevronRight, ArrowLeft } from "lucide-react";
+import { Plus, Dumbbell, ChevronRight, ArrowLeft, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import WorkoutEditor from "@/components/admin/WorkoutEditor";
 
 interface Program {
@@ -36,6 +42,8 @@ export default function StudentWorkouts() {
   const [showNewProgram, setShowNewProgram] = useState(false);
   const [newProgramName, setNewProgramName] = useState("");
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+  const [editProgramName, setEditProgramName] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -108,6 +116,61 @@ export default function StudentWorkouts() {
       });
       setShowNewProgram(false);
       setNewProgramName("");
+      fetchPrograms();
+    }
+  };
+
+  const openEditProgram = (program: Program, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingProgram(program);
+    setEditProgramName(program.name);
+  };
+
+  const handleUpdateProgramName = async () => {
+    if (!editingProgram || !editProgramName.trim()) return;
+
+    const { error } = await supabase
+      .from("training_programs")
+      .update({ name: editProgramName.trim() })
+      .eq("id", editingProgram.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao renomear programa",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Programa renomeado com sucesso",
+      });
+      setEditingProgram(null);
+      setEditProgramName("");
+      fetchPrograms();
+    }
+  };
+
+  const handleDeleteProgram = async (programId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Tem certeza que deseja excluir este programa? Todos os treinos serão excluídos.")) return;
+
+    const { error } = await supabase
+      .from("training_programs")
+      .delete()
+      .eq("id", programId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao excluir programa",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Programa excluído com sucesso",
+      });
       fetchPrograms();
     }
   };
@@ -192,7 +255,29 @@ export default function StudentWorkouts() {
                       </p>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  <div className="flex items-center gap-1">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => openEditProgram(program, e as any)}>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Renomear
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => handleDeleteProgram(program.id, e as any)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -219,6 +304,31 @@ export default function StudentWorkouts() {
                 Cancelar
               </Button>
               <Button onClick={handleCreateProgram}>Criar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Program Dialog */}
+      <Dialog open={!!editingProgram} onOpenChange={(open) => !open && setEditingProgram(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renomear Programa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome do Programa</Label>
+              <Input
+                placeholder="Ex: Programa Janeiro 2025"
+                value={editProgramName}
+                onChange={(e) => setEditProgramName(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditingProgram(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleUpdateProgramName}>Salvar</Button>
             </div>
           </div>
         </DialogContent>
