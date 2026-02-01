@@ -8,7 +8,7 @@ import {
   Dumbbell,
   ChevronDown,
   ChevronUp,
-  Play,
+  ClipboardList,
   Clock,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -118,8 +118,8 @@ export default function MyWorkouts() {
     setLoading(false);
   };
 
-  const startWorkout = (workoutId: string) => {
-    navigate(`/logbook/new/${workoutId}`);
+  const goToLogbook = () => {
+    navigate(`/logbook`);
   };
 
   if (loading) {
@@ -197,12 +197,13 @@ export default function MyWorkouts() {
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
-                    startWorkout(workout.id);
+                    goToLogbook();
                   }}
                   size="sm"
+                  variant="outline"
                 >
-                  <Play className="w-4 h-4 mr-1" />
-                  Iniciar
+                  <ClipboardList className="w-4 h-4 mr-1" />
+                  Registrar
                 </Button>
                 {expandedWorkout === workout.id ? (
                   <ChevronUp className="w-5 h-5 text-muted-foreground" />
