@@ -1,0 +1,228 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Dumbbell, ChevronRight, ArrowLeft } from "lucide-react";
+import WorkoutEditor from "@/components/admin/WorkoutEditor";
+
+interface Program {
+  id: string;
+  name: string;
+  student_id: string;
+  is_active: boolean;
+}
+
+interface StudentProfile {
+  full_name: string;
+  email: string;
+}
+
+export default function StudentWorkouts() {
+  const { studentId } = useParams<{ studentId: string }>();
+  const navigate = useNavigate();
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showNewProgram, setShowNewProgram] = useState(false);
+  const [newProgramName, setNewProgramName] = useState("");
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (studentId) {
+      fetchStudentProfile();
+      fetchPrograms();
+    }
+  }, [studentId]);
+
+  const fetchStudentProfile = async () => {
+    if (!studentId) return;
+
+    const { data: studentData } = await supabase
+      .from("students")
+      .select("user_id")
+      .eq("id", studentId)
+      .single();
+
+    if (studentData) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("user_id", studentData.user_id)
+        .single();
+
+      if (profileData) {
+        setStudentProfile(profileData);
+      }
+    }
+  };
+
+  const fetchPrograms = async () => {
+    if (!studentId) return;
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("training_programs")
+      .select("*")
+      .eq("student_id", studentId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching programs:", error);
+    } else {
+      setPrograms(data || []);
+    }
+    setLoading(false);
+  };
+
+  const handleCreateProgram = async () => {
+    if (!studentId || !newProgramName.trim()) return;
+
+    const { error } = await supabase
+      .from("training_programs")
+      .insert({
+        student_id: studentId,
+        name: newProgramName.trim(),
+      });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao criar programa",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Programa criado com sucesso",
+      });
+      setShowNewProgram(false);
+      setNewProgramName("");
+      fetchPrograms();
+    }
+  };
+
+  if (selectedProgram) {
+    return (
+      <WorkoutEditor
+        programId={selectedProgram}
+        onBack={() => setSelectedProgram(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/students")}>
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold">
+            Treinos de {studentProfile?.full_name || "Aluno"}
+          </h1>
+          <p className="text-muted-foreground">
+            Gerencie os programas de treino deste aluno
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Programas de Treino</h2>
+        <Button onClick={() => setShowNewProgram(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Programa
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-16 bg-muted rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : programs.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Dumbbell className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">
+              Nenhum programa criado
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Crie o primeiro programa de treino para este aluno
+            </p>
+            <Button onClick={() => setShowNewProgram(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Programa
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {programs.map((program) => (
+            <Card
+              key={program.id}
+              className="workout-card cursor-pointer"
+              onClick={() => setSelectedProgram(program.id)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Dumbbell className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{program.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {program.is_active ? "Ativo" : "Inativo"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={showNewProgram} onOpenChange={setShowNewProgram}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Programa de Treino</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome do Programa</Label>
+              <Input
+                placeholder="Ex: Programa Janeiro 2025"
+                value={newProgramName}
+                onChange={(e) => setNewProgramName(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowNewProgram(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleCreateProgram}>Criar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

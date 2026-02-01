@@ -14,6 +14,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Students from "./pages/admin/Students";
 import StudentLogbook from "./pages/admin/StudentLogbook";
 import Workouts from "./pages/admin/Workouts";
+import StudentWorkouts from "./pages/admin/StudentWorkouts";
 import GuidesAdmin from "./pages/admin/Guides";
 
 // Student Pages
@@ -101,6 +102,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             {isAdmin ? <StudentLogbook /> : <Navigate to="/" replace />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/students/:studentId/workouts"
+        element={
+          <ProtectedRoute>
+            {isAdmin ? <StudentWorkouts /> : <Navigate to="/" replace />}
           </ProtectedRoute>
         }
       />
