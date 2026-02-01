@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, User, MoreVertical, Loader2, Mail } from "lucide-react";
+import { Plus, Search, User, MoreVertical, Loader2, Mail, ClipboardList } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +41,7 @@ interface Student {
 }
 
 export default function Students() {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -350,6 +352,10 @@ export default function Students() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => navigate(`/students/${student.id}/logbook`)}>
+                        <ClipboardList className="w-4 h-4 mr-2" />
+                        Ver Logbook
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEditDialog(student)}>
                         Editar
                       </DropdownMenuItem>

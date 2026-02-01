@@ -12,13 +12,13 @@ import NotFound from "./pages/NotFound";
 // Admin Pages
 import Dashboard from "./pages/admin/Dashboard";
 import Students from "./pages/admin/Students";
+import StudentLogbook from "./pages/admin/StudentLogbook";
 import Workouts from "./pages/admin/Workouts";
 import GuidesAdmin from "./pages/admin/Guides";
 
 // Student Pages
 import MyWorkouts from "./pages/student/MyWorkouts";
 import Logbook from "./pages/student/Logbook";
-import NewSession from "./pages/student/NewSession";
 import GuidesStudent from "./pages/student/Guides";
 
 // Layout
@@ -97,6 +97,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/students/:studentId/logbook"
+        element={
+          <ProtectedRoute>
+            {isAdmin ? <StudentLogbook /> : <Navigate to="/" replace />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/workouts"
         element={
           <ProtectedRoute>
@@ -111,14 +119,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             {!isAdmin ? <Logbook /> : <Navigate to="/" replace />}
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/logbook/new/:workoutId"
-        element={
-          <ProtectedRoute>
-            {!isAdmin ? <NewSession /> : <Navigate to="/" replace />}
           </ProtectedRoute>
         }
       />

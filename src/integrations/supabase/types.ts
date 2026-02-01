@@ -139,6 +139,124 @@ export type Database = {
           },
         ]
       }
+      logbook_week_entries: {
+        Row: {
+          created_at: string
+          exercise_name: string
+          exercise_order: number
+          id: string
+          original_exercise_id: string | null
+          set1_reps: number | null
+          set1_weight: number | null
+          set2_reps: number | null
+          set2_weight: number | null
+          set3_reps: number | null
+          set3_weight: number | null
+          set4_reps: number | null
+          set4_weight: number | null
+          updated_at: string
+          week_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_name: string
+          exercise_order: number
+          id?: string
+          original_exercise_id?: string | null
+          set1_reps?: number | null
+          set1_weight?: number | null
+          set2_reps?: number | null
+          set2_weight?: number | null
+          set3_reps?: number | null
+          set3_weight?: number | null
+          set4_reps?: number | null
+          set4_weight?: number | null
+          updated_at?: string
+          week_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_name?: string
+          exercise_order?: number
+          id?: string
+          original_exercise_id?: string | null
+          set1_reps?: number | null
+          set1_weight?: number | null
+          set2_reps?: number | null
+          set2_weight?: number | null
+          set3_reps?: number | null
+          set3_weight?: number | null
+          set4_reps?: number | null
+          set4_weight?: number | null
+          updated_at?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logbook_week_entries_original_exercise_id_fkey"
+            columns: ["original_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logbook_week_entries_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "logbook_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logbook_weeks: {
+        Row: {
+          created_at: string
+          id: string
+          program_id: string
+          student_id: string
+          week_number: number
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_id: string
+          student_id: string
+          week_number: number
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_id?: string
+          student_id?: string
+          week_number?: number
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logbook_weeks_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logbook_weeks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logbook_weeks_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
