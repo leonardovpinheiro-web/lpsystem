@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import ExerciseTable from "./ExerciseTable";
+import ExerciseTable, { ExerciseTableRef } from "./ExerciseTable";
 
 interface Workout {
   id: string;
@@ -41,6 +41,9 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [programName, setProgramName] = useState("");
   const { toast } = useToast();
+  
+  // Store refs to ExerciseTable components for flushing
+  const exerciseTableRefs = useRef<Map<string, ExerciseTableRef>>(new Map());
 
   useEffect(() => {
     fetchWorkouts();
@@ -154,7 +157,7 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
   }, [toast]);
 
   // Debounced save for workout name
-  const debouncedSaveWorkoutName = useDebouncedCallback(saveWorkoutName, 500);
+  const { debouncedCallback: debouncedSaveWorkoutName, flush: flushWorkoutName } = useDebouncedCallback(saveWorkoutName, 500);
 
   // Update local state and trigger debounced save
   const handleRenameWorkout = (workoutId: string, newName: string) => {
@@ -164,6 +167,29 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
     ));
     // Trigger debounced save
     debouncedSaveWorkoutName(workoutId, newName);
+  };
+
+  // Handle expanding/collapsing workouts - flush pending saves first
+  const handleToggleWorkout = async (workoutId: string) => {
+    // If we're collapsing the current workout, flush its pending saves
+    if (expandedWorkout === workoutId) {
+      const tableRef = exerciseTableRefs.current.get(workoutId);
+      if (tableRef) {
+        await tableRef.flushPendingSaves();
+      }
+      flushWorkoutName();
+      setExpandedWorkout(null);
+    } else {
+      // If we're switching to a different workout, flush the previous one first
+      if (expandedWorkout) {
+        const prevTableRef = exerciseTableRefs.current.get(expandedWorkout);
+        if (prevTableRef) {
+          await prevTableRef.flushPendingSaves();
+        }
+        flushWorkoutName();
+      }
+      setExpandedWorkout(workoutId);
+    }
   };
 
   return (
@@ -190,9 +216,7 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
           <Card key={workout.id} className="overflow-hidden">
             <CardHeader
               className="cursor-pointer bg-secondary/50 py-3"
-              onClick={() =>
-                setExpandedWorkout(expandedWorkout === workout.id ? null : workout.id)
-              }
+              onClick={() => handleToggleWorkout(workout.id)}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -225,7 +249,16 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
             </CardHeader>
             {expandedWorkout === workout.id && (
               <CardContent className="p-0">
-                <ExerciseTable workoutId={workout.id} />
+                <ExerciseTable 
+                  workoutId={workout.id} 
+                  ref={(ref) => {
+                    if (ref) {
+                      exerciseTableRefs.current.set(workout.id, ref);
+                    } else {
+                      exerciseTableRefs.current.delete(workout.id);
+                    }
+                  }}
+                />
               </CardContent>
             )}
           </Card>
