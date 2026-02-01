@@ -107,7 +107,21 @@ export default function GuidesStudent() {
                   <div className="prose prose-sm max-w-none text-foreground">
                     {guide.content.split("\n").map((paragraph, i) => (
                       <p key={i} className="mb-2">
-                        {paragraph}
+                        {paragraph.split(/(https?:\/\/[^\s]+)/g).map((part, j) =>
+                          part.match(/^https?:\/\//) ? (
+                            <a
+                              key={j}
+                              href={part}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline hover:text-primary/80"
+                            >
+                              {part}
+                            </a>
+                          ) : (
+                            part
+                          )
+                        )}
                       </p>
                     ))}
                   </div>
