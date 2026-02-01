@@ -23,6 +23,8 @@ import MyWorkouts from "./pages/student/MyWorkouts";
 import Logbook from "./pages/student/Logbook";
 import ActiveWorkout from "./pages/student/ActiveWorkout";
 import GuidesStudent from "./pages/student/Guides";
+import Platform from "./pages/student/Platform";
+import CourseViewer from "./pages/student/CourseViewer";
 
 // Layout
 import Layout from "./components/layout/Layout";
@@ -156,6 +158,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             {isAdmin ? <GuidesAdmin /> : <GuidesStudent />}
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Platform - Student only */}
+      <Route
+        path="/platform"
+        element={
+          <ProtectedRoute>
+            {!isAdmin ? <Platform /> : <Navigate to="/" replace />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/platform/course/:courseId"
+        element={
+          <ProtectedRoute>
+            {!isAdmin ? <CourseViewer /> : <Navigate to="/" replace />}
           </ProtectedRoute>
         }
       />
