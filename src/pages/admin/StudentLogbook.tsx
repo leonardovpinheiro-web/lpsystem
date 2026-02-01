@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import VideoPlayerModal from "@/components/VideoPlayerModal";
 
 
 interface Workout {
@@ -68,6 +69,9 @@ export default function StudentLogbook() {
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [weeks, setWeeks] = useState<LogbookWeek[]>([]);
   const [loading, setLoading] = useState(true);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
+  const [selectedExerciseName, setSelectedExerciseName] = useState<string>("");
 
   useEffect(() => {
     if (studentId) {
@@ -223,9 +227,11 @@ export default function StudentLogbook() {
     setWeeks(formattedWeeks);
   };
 
-  const openVideo = (url: string | null) => {
+  const openVideo = (url: string | null, exerciseName?: string) => {
     if (!url) return;
-    window.open(url, "_blank", "noopener,noreferrer");
+    setSelectedVideoUrl(url);
+    setSelectedExerciseName(exerciseName || "");
+    setVideoModalOpen(true);
   };
 
   // Use exercises from the current workout prescription (always up to date)
@@ -344,9 +350,9 @@ export default function StudentLogbook() {
                         </span>
                         <span className="truncate max-w-[100px]">{exercise.name}</span>
                       </span>
-                      {exercise.video_url && (
+                        {exercise.video_url && (
                         <button
-                          onClick={() => openVideo(exercise.video_url)}
+                          onClick={() => openVideo(exercise.video_url, exercise.name)}
                           className="p-1 rounded hover:bg-primary/10 transition-colors"
                           title="Ver vídeo de execução"
                         >
@@ -418,6 +424,12 @@ export default function StudentLogbook() {
         </Card>
       )}
 
+      <VideoPlayerModal
+        open={videoModalOpen}
+        onOpenChange={setVideoModalOpen}
+        videoUrl={selectedVideoUrl}
+        title={selectedExerciseName}
+      />
     </div>
   );
 }

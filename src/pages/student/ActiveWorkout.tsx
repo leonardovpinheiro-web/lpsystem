@@ -21,6 +21,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import VideoPlayerModal from "@/components/VideoPlayerModal";
 
 interface Exercise {
   id: string;
@@ -69,6 +70,9 @@ export default function ActiveWorkout() {
   const [currentWeekNumber, setCurrentWeekNumber] = useState<number>(1);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [workoutNotes, setWorkoutNotes] = useState("");
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
+  const [selectedExerciseName, setSelectedExerciseName] = useState<string>("");
   
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingSaveRef = useRef<Record<string, SetData[]>>({});
@@ -564,7 +568,9 @@ export default function ActiveWorkout() {
                           className="h-8 w-8"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(exercise.video_url!, "_blank", "noopener,noreferrer");
+                            setSelectedVideoUrl(exercise.video_url);
+                            setSelectedExerciseName(exercise.name);
+                            setVideoModalOpen(true);
                           }}
                         >
                           <Play className="w-4 h-4 text-primary" />
@@ -692,6 +698,13 @@ export default function ActiveWorkout() {
           </Button>
         </div>
       </div>
+
+      <VideoPlayerModal
+        open={videoModalOpen}
+        onOpenChange={setVideoModalOpen}
+        videoUrl={selectedVideoUrl}
+        title={selectedExerciseName}
+      />
     </div>
   );
 }

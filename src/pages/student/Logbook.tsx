@@ -13,8 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-
+import VideoPlayerModal from "@/components/VideoPlayerModal";
 interface Workout {
   id: string;
   name: string;
@@ -65,6 +64,9 @@ export default function Logbook() {
   const [activeWeek, setActiveWeek] = useState<string>("1");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
+  const [selectedExerciseName, setSelectedExerciseName] = useState<string>("");
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -403,9 +405,11 @@ export default function Logbook() {
     return week.entries.find((e) => e.original_exercise_id === exerciseId);
   };
 
-  const openVideo = (url: string | null) => {
+  const openVideo = (url: string | null, exerciseName?: string) => {
     if (!url) return;
-    window.open(url, "_blank", "noopener,noreferrer");
+    setSelectedVideoUrl(url);
+    setSelectedExerciseName(exerciseName || "");
+    setVideoModalOpen(true);
   };
 
   return (
@@ -475,7 +479,7 @@ export default function Logbook() {
                       </span>
                       {exercise.video_url && (
                         <button
-                          onClick={() => openVideo(exercise.video_url)}
+                          onClick={() => openVideo(exercise.video_url, exercise.name)}
                           className="p-1 rounded hover:bg-primary/10 transition-colors"
                           title="Ver vídeo de execução"
                         >
@@ -584,6 +588,12 @@ export default function Logbook() {
         </Card>
       )}
 
+      <VideoPlayerModal
+        open={videoModalOpen}
+        onOpenChange={setVideoModalOpen}
+        videoUrl={selectedVideoUrl}
+        title={selectedExerciseName}
+      />
     </div>
   );
 }
