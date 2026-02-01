@@ -38,6 +38,8 @@ export default function ExerciseAutocomplete({
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+  // Flag to skip blur save when selecting from autocomplete
+  const justSelectedRef = useRef(false);
 
   useEffect(() => {
     setInputValue(value);
@@ -91,16 +93,29 @@ export default function ExerciseAutocomplete({
   };
 
   const handleSelectExercise = (exercise: ExerciseLibraryItem) => {
+    // Mark that we just selected, so blur won't overwrite
+    justSelectedRef.current = true;
+    
     setInputValue(exercise.name);
     onChange(exercise.name, exercise.video_url);
     setOpen(false);
-    // Salva imediatamente ao selecionar da lista
+    
+    // Save immediately when selecting from list
     onSelect?.(exercise.name, exercise.video_url);
+    
+    // Reset flag after a delay (longer than blur timeout)
+    setTimeout(() => {
+      justSelectedRef.current = false;
+    }, 300);
   };
 
   const handleBlur = () => {
     // Delay to allow click on suggestion
     setTimeout(() => {
+      // Skip blur save if we just selected from autocomplete
+      if (justSelectedRef.current) {
+        return;
+      }
       onBlur();
     }, 200);
   };
