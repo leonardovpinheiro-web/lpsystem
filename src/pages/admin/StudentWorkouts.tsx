@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Dumbbell, ChevronRight, ArrowLeft, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Plus, Dumbbell, ChevronRight, ArrowLeft, MoreVertical, Pencil, Trash2, Copy, Loader2 } from "lucide-react";
 import WorkoutEditor from "@/components/admin/WorkoutEditor";
 
 interface Program {
@@ -44,6 +44,7 @@ export default function StudentWorkouts() {
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [editProgramName, setEditProgramName] = useState("");
+  const [duplicating, setDuplicating] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -175,6 +176,101 @@ export default function StudentWorkouts() {
     }
   };
 
+  const handleDuplicateProgram = async (program: Program, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDuplicating(program.id);
+
+    try {
+      // 1. Create new program
+      const { data: newProgram, error: programError } = await supabase
+        .from("training_programs")
+        .insert({
+          student_id: program.student_id,
+          name: `${program.name} (Cópia)`,
+          is_active: program.is_active,
+        })
+        .select()
+        .single();
+
+      if (programError || !newProgram) {
+        throw new Error("Erro ao criar programa");
+      }
+
+      // 2. Fetch workouts from original program
+      const { data: workouts, error: workoutsError } = await supabase
+        .from("workouts")
+        .select("*")
+        .eq("program_id", program.id)
+        .order("order_index", { ascending: true });
+
+      if (workoutsError) {
+        throw new Error("Erro ao buscar treinos");
+      }
+
+      // 3. Duplicate each workout and its exercises
+      for (const workout of workouts || []) {
+        const { data: newWorkout, error: newWorkoutError } = await supabase
+          .from("workouts")
+          .insert({
+            program_id: newProgram.id,
+            name: workout.name,
+            order_index: workout.order_index,
+          })
+          .select()
+          .single();
+
+        if (newWorkoutError || !newWorkout) {
+          console.error("Error duplicating workout:", newWorkoutError);
+          continue;
+        }
+
+        // Fetch exercises from original workout
+        const { data: exercises, error: exercisesError } = await supabase
+          .from("exercises")
+          .select("*")
+          .eq("workout_id", workout.id)
+          .order("order_index", { ascending: true });
+
+        if (exercisesError || !exercises) {
+          console.error("Error fetching exercises:", exercisesError);
+          continue;
+        }
+
+        // Duplicate exercises
+        if (exercises.length > 0) {
+          const newExercises = exercises.map(ex => ({
+            workout_id: newWorkout.id,
+            name: ex.name,
+            sets: ex.sets,
+            reps: ex.reps,
+            technique: ex.technique,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.notes,
+            video_url: ex.video_url,
+            order_index: ex.order_index,
+          }));
+
+          await supabase.from("exercises").insert(newExercises);
+        }
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Programa duplicado com sucesso",
+      });
+      fetchPrograms();
+    } catch (error) {
+      console.error("Error duplicating program:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao duplicar programa",
+      });
+    } finally {
+      setDuplicating(null);
+    }
+  };
+
   if (selectedProgram) {
     return (
       <WorkoutEditor
@@ -256,6 +352,9 @@ export default function StudentWorkouts() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
+                    {duplicating === program.id && (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -266,6 +365,13 @@ export default function StudentWorkouts() {
                         <DropdownMenuItem onClick={(e) => openEditProgram(program, e as any)}>
                           <Pencil className="w-4 h-4 mr-2" />
                           Renomear
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => handleDuplicateProgram(program, e as any)}
+                          disabled={duplicating === program.id}
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Duplicar
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={(e) => handleDeleteProgram(program.id, e as any)}
