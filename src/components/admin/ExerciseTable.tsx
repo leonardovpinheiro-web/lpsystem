@@ -3,7 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Play } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import ExerciseAutocomplete from "./ExerciseAutocomplete";
 
 interface Exercise {
@@ -19,6 +25,15 @@ interface Exercise {
   video_url: string | null;
 }
 
+const getYouTubeEmbedUrl = (url: string): string | null => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}`;
+  }
+  return null;
+};
+
 interface ExerciseTableProps {
   workoutId: string;
 }
@@ -26,6 +41,11 @@ interface ExerciseTableProps {
 export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
+  const [videoModal, setVideoModal] = useState<{ open: boolean; url: string; name: string }>({
+    open: false,
+    url: "",
+    name: "",
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -212,15 +232,15 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
               </td>
               <td className="text-center">
                 {exercise.video_url ? (
-                  <a
-                    href={exercise.video_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center text-primary hover:text-primary/80 transition-colors"
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-primary hover:text-primary/80"
+                    onClick={() => setVideoModal({ open: true, url: exercise.video_url!, name: exercise.name })}
                     title="Ver vídeo do exercício"
                   >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+                    <Play className="w-4 h-4" />
+                  </Button>
                 ) : (
                   <span className="text-muted-foreground">-</span>
                 )}
@@ -309,6 +329,28 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
           Adicionar Exercício
         </Button>
       </div>
+
+      <Dialog open={videoModal.open} onOpenChange={(open) => setVideoModal({ ...videoModal, open })}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>{videoModal.name}</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video w-full">
+            {videoModal.url && getYouTubeEmbedUrl(videoModal.url) ? (
+              <iframe
+                src={getYouTubeEmbedUrl(videoModal.url)!}
+                className="w-full h-full rounded-lg"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-muted rounded-lg">
+                <p className="text-muted-foreground">Vídeo não disponível</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
