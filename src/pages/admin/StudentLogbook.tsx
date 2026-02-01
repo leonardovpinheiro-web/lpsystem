@@ -18,6 +18,13 @@ interface Workout {
   name: string;
 }
 
+interface WorkoutExercise {
+  id: string;
+  name: string;
+  order_index: number;
+  video_url: string | null;
+}
+
 interface LogbookWeek {
   id: string;
   week_number: number;
@@ -58,6 +65,7 @@ export default function StudentLogbook() {
   const [student, setStudent] = useState<StudentInfo | null>(null);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<string>("");
+  const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [weeks, setWeeks] = useState<LogbookWeek[]>([]);
   const [loading, setLoading] = useState(true);
   const [videoModal, setVideoModal] = useState<{ open: boolean; url: string | null; name: string }>({
@@ -75,8 +83,24 @@ export default function StudentLogbook() {
   useEffect(() => {
     if (selectedWorkout) {
       fetchLogbookWeeks();
+      fetchWorkoutExercises();
     }
   }, [selectedWorkout]);
+
+  const fetchWorkoutExercises = async () => {
+    const { data, error } = await supabase
+      .from("exercises")
+      .select("id, name, order_index, video_url")
+      .eq("workout_id", selectedWorkout)
+      .order("order_index", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching workout exercises:", error);
+      return;
+    }
+
+    setWorkoutExercises(data || []);
+  };
 
   const fetchStudentData = async () => {
     // Fetch student info
@@ -210,6 +234,18 @@ export default function StudentLogbook() {
     }
   };
 
+  // Use exercises from the current workout prescription (always up to date)
+  const allExercises = workoutExercises.map((e) => ({
+    id: e.id,
+    name: e.name,
+    order: e.order_index,
+    video_url: e.video_url,
+  }));
+
+  const getEntryForExercise = (week: LogbookWeek, exerciseId: string) => {
+    return week.entries.find((e) => e.original_exercise_id === exerciseId);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -301,22 +337,22 @@ export default function StudentLogbook() {
                 <div className="flex-shrink-0 min-w-[180px] border-r border-border">
                   <div className="h-14 border-b border-border" />
                   <div className="h-8 border-b border-border bg-muted/30" />
-                  {weeks[0]?.entries.map((exercise, index) => (
+                  {allExercises.map((exercise, index) => (
                     <div
-                      key={exercise.exercise_name}
+                      key={exercise.id}
                       className={`h-12 flex items-center justify-between px-3 border-b border-border ${
                         index % 2 === 0 ? "bg-background" : "bg-muted/20"
                       }`}
                     >
                       <span className="inline-flex items-center gap-2 font-medium text-sm">
                         <span className="w-5 h-5 bg-primary/10 rounded flex items-center justify-center text-xs font-medium text-primary">
-                          {exercise.exercise_order + 1}
+                          {exercise.order + 1}
                         </span>
-                        <span className="truncate max-w-[100px]">{exercise.exercise_name}</span>
+                        <span className="truncate max-w-[100px]">{exercise.name}</span>
                       </span>
                       {exercise.video_url && (
                         <button
-                          onClick={() => openVideoModal(exercise.video_url, exercise.exercise_name)}
+                          onClick={() => openVideoModal(exercise.video_url, exercise.name)}
                           className="p-1 rounded hover:bg-primary/10 transition-colors"
                           title="Ver vídeo de execução"
                         >
@@ -347,29 +383,38 @@ export default function StudentLogbook() {
                       </div>
 
                       {/* Exercise rows */}
-                      {week.entries.map((entry, index) => (
-                        <div
-                          key={entry.id}
-                          className={`h-12 flex ${
-                            index % 2 === 0 ? "bg-background" : "bg-muted/20"
-                          }`}
-                        >
-                          {[1, 2, 3, 4].map((setNum) => (
-                            <div
-                              key={`set-${setNum}`}
-                              className="flex-1 flex items-center justify-center gap-2 border-r border-border last:border-r-0 px-2"
-                            >
-                              <span className="text-sm font-medium">
-                                {entry[`set${setNum}_weight` as keyof LogbookEntry] ?? "-"}
-                              </span>
-                              <span className="text-xs text-muted-foreground">/</span>
-                              <span className="text-sm">
-                                {entry[`set${setNum}_reps` as keyof LogbookEntry] ?? "-"}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
+                      {allExercises.map((exercise, index) => {
+                        const entry = getEntryForExercise(week, exercise.id);
+                        return (
+                          <div
+                            key={`${week.id}-${exercise.id}`}
+                            className={`h-12 flex ${
+                              index % 2 === 0 ? "bg-background" : "bg-muted/20"
+                            }`}
+                          >
+                            {[1, 2, 3, 4].map((setNum) => (
+                              <div
+                                key={`set-${setNum}`}
+                                className="flex-1 flex items-center justify-center gap-2 border-r border-border last:border-r-0 px-2"
+                              >
+                                {entry ? (
+                                  <>
+                                    <span className="text-sm font-medium">
+                                      {entry[`set${setNum}_weight` as keyof LogbookEntry] ?? "-"}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">/</span>
+                                    <span className="text-sm">
+                                      {entry[`set${setNum}_reps` as keyof LogbookEntry] ?? "-"}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">-</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
