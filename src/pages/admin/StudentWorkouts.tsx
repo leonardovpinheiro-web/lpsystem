@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Dumbbell, ChevronRight, ArrowLeft, MoreVertical, Pencil, Trash2, Copy, Loader2 } from "lucide-react";
+import { Plus, Dumbbell, ChevronRight, ArrowLeft, MoreVertical, Pencil, Trash2, Copy, Loader2, Library } from "lucide-react";
 import WorkoutEditor from "@/components/admin/WorkoutEditor";
 
 interface Program {
@@ -271,6 +271,85 @@ export default function StudentWorkouts() {
     }
   };
 
+  const handleCopyToLibrary = async (program: Program, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDuplicating(program.id);
+
+    try {
+      // Create template program in library
+      const { data: newProgram, error: programError } = await supabase
+        .from("training_programs")
+        .insert({
+          name: program.name,
+          is_template: true,
+          student_id: null,
+        })
+        .select()
+        .single();
+
+      if (programError || !newProgram) {
+        throw new Error("Erro ao criar programa na biblioteca");
+      }
+
+      // Fetch and duplicate workouts
+      const { data: workouts } = await supabase
+        .from("workouts")
+        .select("*")
+        .eq("program_id", program.id)
+        .order("order_index", { ascending: true });
+
+      for (const workout of workouts || []) {
+        const { data: newWorkout } = await supabase
+          .from("workouts")
+          .insert({
+            program_id: newProgram.id,
+            name: workout.name,
+            order_index: workout.order_index,
+          })
+          .select()
+          .single();
+
+        if (!newWorkout) continue;
+
+        const { data: exercises } = await supabase
+          .from("exercises")
+          .select("*")
+          .eq("workout_id", workout.id)
+          .order("order_index", { ascending: true });
+
+        if (exercises && exercises.length > 0) {
+          const newExercises = exercises.map(ex => ({
+            workout_id: newWorkout.id,
+            name: ex.name,
+            sets: ex.sets,
+            reps: ex.reps,
+            technique: ex.technique,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.notes,
+            video_url: ex.video_url,
+            order_index: ex.order_index,
+          }));
+
+          await supabase.from("exercises").insert(newExercises);
+        }
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Programa copiado para a biblioteca",
+      });
+    } catch (error) {
+      console.error("Error copying to library:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao copiar para biblioteca",
+      });
+    } finally {
+      setDuplicating(null);
+    }
+  };
+
   if (selectedProgram) {
     return (
       <WorkoutEditor
@@ -372,6 +451,13 @@ export default function StudentWorkouts() {
                         >
                           <Copy className="w-4 h-4 mr-2" />
                           Duplicar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => handleCopyToLibrary(program, e as any)}
+                          disabled={duplicating === program.id}
+                        >
+                          <Library className="w-4 h-4 mr-2" />
+                          Copiar para Biblioteca
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={(e) => handleDeleteProgram(program.id, e as any)}
