@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ClipboardList } from "lucide-react";
+import { ArrowLeft, ClipboardList, Play } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { VideoModal } from "@/components/logbook/VideoModal";
 
 interface Workout {
   id: string;
@@ -31,6 +32,8 @@ interface LogbookEntry {
   id: string;
   exercise_name: string;
   exercise_order: number;
+  original_exercise_id: string | null;
+  video_url: string | null;
   set1_weight: number | null;
   set1_reps: number | null;
   set2_weight: number | null;
@@ -57,6 +60,11 @@ export default function StudentLogbook() {
   const [selectedWorkout, setSelectedWorkout] = useState<string>("");
   const [weeks, setWeeks] = useState<LogbookWeek[]>([]);
   const [loading, setLoading] = useState(true);
+  const [videoModal, setVideoModal] = useState<{ open: boolean; url: string | null; name: string }>({
+    open: false,
+    url: null,
+    name: "",
+  });
 
   useEffect(() => {
     if (studentId) {
@@ -141,6 +149,7 @@ export default function StudentLogbook() {
           id,
           exercise_name,
           exercise_order,
+          original_exercise_id,
           set1_weight,
           set1_reps,
           set2_weight,
@@ -159,15 +168,46 @@ export default function StudentLogbook() {
       return;
     }
 
+    // Fetch video URLs for exercises
+    const exerciseIds = new Set<string>();
+    data?.forEach((week) => {
+      (week.entries as any[])?.forEach((entry) => {
+        if (entry.original_exercise_id) {
+          exerciseIds.add(entry.original_exercise_id);
+        }
+      });
+    });
+
+    let videoMap: Record<string, string | null> = {};
+    if (exerciseIds.size > 0) {
+      const { data: exercisesData } = await supabase
+        .from("exercises")
+        .select("id, video_url")
+        .in("id", Array.from(exerciseIds));
+
+      exercisesData?.forEach((ex) => {
+        videoMap[ex.id] = ex.video_url;
+      });
+    }
+
     const formattedWeeks = (data || []).map((week) => ({
       ...week,
       workout: week.workout as { name: string },
-      entries: ((week.entries as LogbookEntry[]) || []).sort(
-        (a, b) => a.exercise_order - b.exercise_order
-      ),
+      entries: ((week.entries as any[]) || [])
+        .map((entry) => ({
+          ...entry,
+          video_url: entry.original_exercise_id ? videoMap[entry.original_exercise_id] : null,
+        }))
+        .sort((a, b) => a.exercise_order - b.exercise_order) as LogbookEntry[],
     }));
 
     setWeeks(formattedWeeks);
+  };
+
+  const openVideoModal = (url: string | null, name: string) => {
+    if (url) {
+      setVideoModal({ open: true, url, name });
+    }
   };
 
   if (loading) {
@@ -264,7 +304,7 @@ export default function StudentLogbook() {
                   {weeks[0]?.entries.map((exercise, index) => (
                     <div
                       key={exercise.exercise_name}
-                      className={`h-12 flex items-center px-3 border-b border-border ${
+                      className={`h-12 flex items-center justify-between px-3 border-b border-border ${
                         index % 2 === 0 ? "bg-background" : "bg-muted/20"
                       }`}
                     >
@@ -272,8 +312,17 @@ export default function StudentLogbook() {
                         <span className="w-5 h-5 bg-primary/10 rounded flex items-center justify-center text-xs font-medium text-primary">
                           {exercise.exercise_order + 1}
                         </span>
-                        <span className="truncate max-w-[120px]">{exercise.exercise_name}</span>
+                        <span className="truncate max-w-[100px]">{exercise.exercise_name}</span>
                       </span>
+                      {exercise.video_url && (
+                        <button
+                          onClick={() => openVideoModal(exercise.video_url, exercise.exercise_name)}
+                          className="p-1 rounded hover:bg-primary/10 transition-colors"
+                          title="Ver vídeo de execução"
+                        >
+                          <Play className="w-4 h-4 text-primary" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -329,6 +378,13 @@ export default function StudentLogbook() {
           </CardContent>
         </Card>
       )}
+
+      <VideoModal
+        open={videoModal.open}
+        onOpenChange={(open) => setVideoModal((prev) => ({ ...prev, open }))}
+        videoUrl={videoModal.url}
+        exerciseName={videoModal.name}
+      />
     </div>
   );
 }
