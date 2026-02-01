@@ -407,9 +407,15 @@ export default function Logbook() {
   };
 
   const openVideoModal = (url: string | null, name: string) => {
-    if (url) {
-      setVideoModal({ open: true, url, name });
+    if (!url) return;
+
+    // Vimeo: abrir diretamente no link externo (evita "vídeo não disponível" no embed)
+    if (url.includes("vimeo.com")) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
     }
+
+    setVideoModal({ open: true, url, name });
   };
 
   return (
