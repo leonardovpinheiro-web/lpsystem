@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useDebouncedCallback } from "@/hooks/use-debounce";
 import { Plus, Trash2, ArrowUp, ArrowDown, Play, Loader2 } from "lucide-react";
 import ExerciseAutocomplete from "./ExerciseAutocomplete";
 
@@ -20,16 +19,107 @@ interface Exercise {
   video_url: string | null;
 }
 
+interface PendingSave {
+  exerciseId: string;
+  field: keyof Exercise;
+  value: string | null;
+}
+
+export interface ExerciseTableRef {
+  flushPendingSaves: () => Promise<void>;
+}
 
 interface ExerciseTableProps {
   workoutId: string;
 }
 
-export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
+const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workoutId }, ref) => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingFields, setSavingFields] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  
+  // Track pending saves with their timeouts
+  const pendingSavesRef = useRef<Map<string, { timeout: NodeJS.Timeout; save: PendingSave }>>(new Map());
+  const isMountedRef = useRef(true);
+
+  // Expose flush method to parent
+  useImperativeHandle(ref, () => ({
+    flushPendingSaves: async () => {
+      await flushAllPendingSaves();
+    }
+  }));
+
+  // Flush all pending saves
+  const flushAllPendingSaves = useCallback(async () => {
+    const pendingSaves = Array.from(pendingSavesRef.current.values());
+    
+    // Clear all timeouts
+    pendingSavesRef.current.forEach(({ timeout }) => clearTimeout(timeout));
+    pendingSavesRef.current.clear();
+    
+    if (pendingSaves.length === 0) return;
+
+    // Execute all pending saves in parallel
+    const savePromises = pendingSaves.map(async ({ save }) => {
+      const fieldKey = `${save.exerciseId}-${save.field}`;
+      setSavingFields(prev => new Set(prev).add(fieldKey));
+      
+      const { error } = await supabase
+        .from("exercises")
+        .update({ [save.field]: save.value })
+        .eq("id", save.exerciseId);
+      
+      if (isMountedRef.current) {
+        setSavingFields(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(fieldKey);
+          return newSet;
+        });
+      }
+
+      if (error) {
+        console.error("Error saving exercise field:", error);
+      }
+      
+      return { error, save };
+    });
+
+    const results = await Promise.all(savePromises);
+    const errors = results.filter(r => r.error);
+    
+    if (errors.length > 0 && isMountedRef.current) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: `Não foi possível salvar ${errors.length} alteração(ões)`,
+      });
+    }
+  }, [toast]);
+
+  // Cleanup on unmount - flush pending saves
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+      // Flush all pending saves synchronously on unmount
+      const pendingSaves = Array.from(pendingSavesRef.current.values());
+      pendingSavesRef.current.forEach(({ timeout }) => clearTimeout(timeout));
+      pendingSavesRef.current.clear();
+      
+      // Fire and forget - we can't await in cleanup
+      pendingSaves.forEach(({ save }) => {
+        supabase
+          .from("exercises")
+          .update({ [save.field]: save.value })
+          .eq("id", save.exerciseId)
+          .then(({ error }) => {
+            if (error) console.error("Error saving on unmount:", error);
+          });
+      });
+    };
+  }, []);
 
   useEffect(() => {
     fetchExercises();
@@ -52,6 +142,9 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
   };
 
   const handleAddExercise = async () => {
+    // Flush pending saves before adding new exercise
+    await flushAllPendingSaves();
+    
     const maxOrder = exercises.length > 0 
       ? Math.max(...exercises.map(e => e.order_index)) 
       : -1;
@@ -93,23 +186,48 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
       .update({ [field]: value })
       .eq("id", exerciseId);
 
-    setSavingFields(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(fieldKey);
-      return newSet;
-    });
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar a alteração",
+    if (isMountedRef.current) {
+      setSavingFields(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fieldKey);
+        return newSet;
       });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Erro ao salvar",
+          description: "Não foi possível salvar a alteração",
+        });
+      }
     }
   }, [toast]);
 
-  // Debounced save - triggers 500ms after last keystroke
-  const debouncedSave = useDebouncedCallback(saveExerciseField, 500);
+  // Debounced save with proper pending tracking
+  const debouncedSave = useCallback((
+    exerciseId: string,
+    field: keyof Exercise,
+    value: string | null
+  ) => {
+    const fieldKey = `${exerciseId}-${field}`;
+    
+    // Clear existing timeout for this field
+    const existing = pendingSavesRef.current.get(fieldKey);
+    if (existing) {
+      clearTimeout(existing.timeout);
+    }
+    
+    // Set new timeout
+    const timeout = setTimeout(() => {
+      pendingSavesRef.current.delete(fieldKey);
+      saveExerciseField(exerciseId, field, value);
+    }, 500);
+    
+    pendingSavesRef.current.set(fieldKey, {
+      timeout,
+      save: { exerciseId, field, value }
+    });
+  }, [saveExerciseField]);
 
   // Update local state and trigger debounced save
   const handleFieldChange = (
@@ -384,4 +502,8 @@ export default function ExerciseTable({ workoutId }: ExerciseTableProps) {
 
     </div>
   );
-}
+});
+
+ExerciseTable.displayName = "ExerciseTable";
+
+export default ExerciseTable;
