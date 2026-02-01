@@ -1,129 +1,76 @@
 
+# Plano: Reprodutor de Vídeos Interno
 
-## Problema Identificado
+## Resumo
+Implementar um reprodutor de vídeos interno no site para que os usuários possam assistir aos vídeos de demonstração dos exercícios sem sair da aplicação, com fallback robusto para vídeos que não permitem embed.
 
-O sistema atual usa a seguinte lógica para determinar se uma semana está "completa":
+## Arquivos a Criar
 
-```typescript
-const entriesWithData = lastWeek.entries.filter(e => 
-  e.set1_weight !== null || e.set1_reps !== null
-);
-const isWeekComplete = entriesWithData.length >= sortedExercises.length;
-```
+### 1. `src/components/VideoPlayerModal.tsx`
+Componente modal reutilizável com:
+- Dialog do Radix UI para o modal
+- Iframe responsivo com aspect-ratio 16:9
+- Função `getEmbedUrl()` para converter URLs:
+  - YouTube (`watch?v=`, `shorts/`, `youtu.be/`) para `youtube.com/embed/`
+  - Vimeo para `player.vimeo.com/video/`
+- Botão "Abrir em nova aba" sempre visível
+- Detecção de erro de carregamento do iframe com fallback
 
-Isso causa o seguinte problema:
-- Semana 1: Aluno preenche 3 de 4 exercícios e clica em "Finalizar Treino"
-- Próximo treino: Sistema detecta que semana 1 tem 3/4 exercícios preenchidos
-- Sistema carrega semana 1 em vez de criar semana 2
-- Aluno acaba sobrescrevendo dados da semana 1
+## Arquivos a Modificar
 
-## Solução Proposta
+### 2. `src/pages/student/ActiveWorkout.tsx`
+- Importar VideoPlayerModal
+- Adicionar states: `videoModalOpen` e `selectedVideoUrl`
+- Substituir `window.open()` por função que abre o modal
 
-Adicionar um campo `completed_at` na tabela `logbook_weeks` que marca quando o aluno finalizou a sessão de treino. A lógica de verificação passa a ser:
+### 3. `src/pages/student/Logbook.tsx`
+- Importar VideoPlayerModal
+- Adicionar states para controlar o modal
+- Substituir função `openVideo()` por abertura do modal
 
-**Semana completa = semana que foi explicitamente finalizada pelo aluno (campo `completed_at` preenchido)**
+### 4. `src/pages/admin/StudentLogbook.tsx`
+- Importar VideoPlayerModal
+- Adicionar states para controlar o modal
+- Substituir função `openVideo()` por abertura do modal
 
-### Mudanças Necessárias
+### 5. `src/pages/student/MyWorkouts.tsx`
+- Importar VideoPlayerModal
+- Adicionar states para controlar o modal
+- Substituir `window.open()` por abertura do modal
 
-**1. Banco de Dados - Nova coluna na tabela `logbook_weeks`**
-
-Adicionar coluna `completed_at` (timestamp, nullable) que será preenchida quando o aluno clicar em "Finalizar Treino":
-
-```sql
-ALTER TABLE logbook_weeks 
-ADD COLUMN completed_at timestamptz DEFAULT NULL;
-```
-
-**2. Lógica de Determinação de Semana (ActiveWorkout.tsx)**
-
-Alterar a verificação de "semana completa" para usar o campo `completed_at`:
-
-```typescript
-// ANTES (problemático):
-const isWeekComplete = entriesWithData.length >= sortedExercises.length;
-
-// DEPOIS (correto):
-const isWeekComplete = lastWeek.completed_at !== null;
-```
-
-**3. Finalização do Treino (ActiveWorkout.tsx)**
-
-Ao clicar em "Finalizar Treino", atualizar o campo `completed_at` da semana atual:
-
-```typescript
-await supabase
-  .from("logbook_weeks")
-  .update({ completed_at: new Date().toISOString() })
-  .eq("id", currentWeekId);
-```
-
-### Fluxo Corrigido
-
-1. Aluno inicia treino pela primeira vez - Sistema cria Semana 1
-2. Aluno preenche alguns exercícios e sai da página - Dados são salvos automaticamente
-3. Aluno volta e continua preenchendo - Sistema carrega Semana 1 (pois `completed_at` é null)
-4. Aluno clica em "Finalizar Treino" - Sistema marca `completed_at` com timestamp atual
-5. Próximo dia, aluno inicia treino - Sistema detecta que Semana 1 tem `completed_at` preenchido
-6. Sistema cria Semana 2 automaticamente
-
----
+### 6. `src/components/admin/ExerciseTable.tsx`
+- Importar VideoPlayerModal
+- Adicionar states para controlar o modal
+- Substituir `window.open()` por abertura do modal
 
 ## Detalhes Técnicos
 
-### Arquivos a serem modificados:
+### Lógica de Conversão de URLs
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `supabase/migrations/` | Nova migration para adicionar coluna `completed_at` |
-| `src/pages/student/ActiveWorkout.tsx` | Atualizar lógica de verificação e finalização |
+| Plataforma | URL Original | URL de Embed |
+|------------|--------------|--------------|
+| YouTube | `youtube.com/watch?v=ID` | `youtube.com/embed/ID` |
+| YouTube Shorts | `youtube.com/shorts/ID` | `youtube.com/embed/ID` |
+| YouTube Share | `youtu.be/ID` | `youtube.com/embed/ID` |
+| Vimeo | `vimeo.com/ID` | `player.vimeo.com/video/ID` |
+| Outras | - | Mostra mensagem + botão nova aba |
 
-### Query para buscar semanas (atualizada):
+### Tratamento de Erros
+- Evento `onError` no iframe para detectar falhas
+- Mensagem amigável quando embed não é permitido
+- Botão "Abrir em nova aba" sempre disponível como alternativa
 
-```typescript
-const { data: existingWeeks } = await supabase
-  .from("logbook_weeks")
-  .select(`
-    id,
-    week_number,
-    completed_at,  // NOVO CAMPO
-    entries:logbook_week_entries(...)
-  `)
-  .eq("workout_id", workoutId)
-  .eq("student_id", studentData.id)
-  .order("week_number", { ascending: false });
-```
+### Props do Componente VideoPlayerModal
+- `open: boolean` - Controla visibilidade do modal
+- `onOpenChange: (open: boolean) => void` - Callback de mudança
+- `videoUrl: string | null` - URL do vídeo a reproduzir
+- `title?: string` - Título opcional (nome do exercício)
 
-### Nova lógica de determinação:
+## Comportamento Esperado
 
-```typescript
-if (existingWeeks && existingWeeks.length > 0) {
-  const lastWeek = existingWeeks[0];
-  
-  // Semana está completa se foi explicitamente finalizada
-  const isWeekComplete = lastWeek.completed_at !== null;
-
-  if (isWeekComplete) {
-    // Criar nova semana...
-  } else {
-    // Carregar dados da semana atual...
-  }
-}
-```
-
-### Atualização no finishWorkout:
-
-```typescript
-const finishWorkout = async () => {
-  // ... salvar dados dos exercícios ...
-
-  // Marcar semana como finalizada
-  await supabase
-    .from("logbook_weeks")
-    .update({ completed_at: new Date().toISOString() })
-    .eq("id", currentWeekId);
-
-  toast({ title: "Treino finalizado!" });
-  navigate("/logbook");
-};
-```
-
+1. Usuário clica no ícone de Play em qualquer exercício
+2. Modal abre sobre a página atual
+3. Se YouTube/Vimeo: vídeo reproduz no iframe
+4. Se outra plataforma ou embed bloqueado: mostra mensagem + botão para nova aba
+5. Botão "Abrir em nova aba" sempre visível para preferência do usuário
+6. Fechar clicando no X ou fora do modal
