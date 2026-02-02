@@ -479,6 +479,7 @@ export type Database = {
         Row: {
           admin_notes: string | null
           created_at: string
+          diet_url: string | null
           id: string
           status: Database["public"]["Enums"]["student_status"]
           updated_at: string
@@ -487,6 +488,7 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           created_at?: string
+          diet_url?: string | null
           id?: string
           status?: Database["public"]["Enums"]["student_status"]
           updated_at?: string
@@ -495,6 +497,7 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           created_at?: string
+          diet_url?: string | null
           id?: string
           status?: Database["public"]["Enums"]["student_status"]
           updated_at?: string

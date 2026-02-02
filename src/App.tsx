@@ -25,6 +25,7 @@ import ActiveWorkout from "./pages/student/ActiveWorkout";
 import GuidesStudent from "./pages/student/Guides";
 import Platform from "./pages/student/Platform";
 import CourseViewer from "./pages/student/CourseViewer";
+import Diet from "./pages/student/Diet";
 
 // Layout
 import Layout from "./components/layout/Layout";
@@ -140,6 +141,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             {!isAdmin ? <Logbook /> : <Navigate to="/" replace />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/diet"
+        element={
+          <ProtectedRoute>
+            {!isAdmin ? <Diet /> : <Navigate to="/" replace />}
           </ProtectedRoute>
         }
       />

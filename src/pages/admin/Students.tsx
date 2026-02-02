@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, User, MoreVertical, Loader2, Mail, ClipboardList, Dumbbell } from "lucide-react";
+import { Plus, Search, User, MoreVertical, Loader2, Mail, ClipboardList, Dumbbell, Upload, FileText, Trash2, ExternalLink } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,7 @@ interface Student {
   user_id: string;
   status: "active" | "paused";
   admin_notes: string | null;
+  diet_url: string | null;
   created_at: string;
   profile: {
     full_name: string;
@@ -53,6 +55,8 @@ export default function Students() {
   // Form state for editing
   const [editStatus, setEditStatus] = useState<"active" | "paused">("active");
   const [editNotes, setEditNotes] = useState("");
+  const [editDietUrl, setEditDietUrl] = useState<string | null>(null);
+  const [isUploadingDiet, setIsUploadingDiet] = useState(false);
 
   // Form state for adding new student
   const [newStudentName, setNewStudentName] = useState("");
@@ -115,6 +119,7 @@ export default function Students() {
     setEditingStudent(student);
     setEditStatus(student.status);
     setEditNotes(student.admin_notes || "");
+    setEditDietUrl(student.diet_url || null);
     setIsDialogOpen(true);
   };
 
@@ -126,6 +131,7 @@ export default function Students() {
       .update({
         status: editStatus,
         admin_notes: editNotes || null,
+        diet_url: editDietUrl,
       })
       .eq("id", editingStudent.id);
 
@@ -142,6 +148,83 @@ export default function Students() {
       });
       setIsDialogOpen(false);
       fetchStudents();
+    }
+  };
+
+  const handleDietUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editingStudent || !event.target.files || event.target.files.length === 0) return;
+
+    const file = event.target.files[0];
+    if (file.type !== "application/pdf") {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Por favor, selecione um arquivo PDF",
+      });
+      return;
+    }
+
+    setIsUploadingDiet(true);
+
+    try {
+      const fileName = `${editingStudent.id}/${Date.now()}_${file.name}`;
+      
+      // Upload file to storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("diets")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("diets")
+        .getPublicUrl(uploadData.path);
+
+      setEditDietUrl(urlData.publicUrl);
+      toast({
+        title: "Sucesso",
+        description: "Dieta enviada com sucesso",
+      });
+    } catch (error) {
+      console.error("Error uploading diet:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao enviar arquivo de dieta",
+      });
+    } finally {
+      setIsUploadingDiet(false);
+      // Reset input
+      event.target.value = "";
+    }
+  };
+
+  const handleRemoveDiet = async () => {
+    if (!editingStudent || !editDietUrl) return;
+
+    try {
+      // Extract file path from URL
+      const urlParts = editDietUrl.split("/diets/");
+      if (urlParts.length > 1) {
+        const filePath = decodeURIComponent(urlParts[1]);
+        await supabase.storage.from("diets").remove([filePath]);
+      }
+      
+      setEditDietUrl(null);
+      toast({
+        title: "Sucesso",
+        description: "Dieta removida",
+      });
+    } catch (error) {
+      console.error("Error removing diet:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao remover dieta",
+      });
     }
   };
 
@@ -427,6 +510,59 @@ export default function Students() {
                 onChange={(e) => setEditNotes(e.target.value)}
               />
             </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <Label>Dieta do Aluno</Label>
+              {editDietUrl ? (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="text-sm flex-1 truncate">
+                    {editDietUrl.split("/").pop()?.split("_").slice(1).join("_") || "Dieta.pdf"}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => window.open(editDietUrl, "_blank")}
+                    title="Ver dieta"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRemoveDiet}
+                    title="Remover dieta"
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleDietUpload}
+                    disabled={isUploadingDiet}
+                    className="hidden"
+                    id="diet-upload"
+                  />
+                  <Label
+                    htmlFor="diet-upload"
+                    className="flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
+                  >
+                    {isUploadingDiet ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    <span>{isUploadingDiet ? "Enviando..." : "Escolher arquivo PDF"}</span>
+                  </Label>
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
