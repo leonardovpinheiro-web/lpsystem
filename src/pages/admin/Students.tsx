@@ -437,6 +437,14 @@ export default function Students() {
                       <Dumbbell className="w-4 h-4 mr-1" />
                       Treino
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditDialog(student)}
+                    >
+                      <FileText className="w-4 h-4 mr-1" />
+                      Dieta
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
