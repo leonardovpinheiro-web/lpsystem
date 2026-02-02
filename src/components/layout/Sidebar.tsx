@@ -13,6 +13,7 @@ import {
   Menu,
   Library,
   GraduationCap,
+  Apple,
 } from "lucide-react";
 import lpLogo from "@/assets/lp-logo.png";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export default function Sidebar() {
   const studentLinks = [
     { href: "/", label: "Meus Treinos", icon: Dumbbell },
     { href: "/logbook", label: "Logbook", icon: ClipboardList },
+    { href: "/diet", label: "Dieta", icon: Apple },
     { href: "/guides", label: "Guia de treino", icon: BookOpen },
     { href: "/platform", label: "Plataforma", icon: GraduationCap },
   ];
