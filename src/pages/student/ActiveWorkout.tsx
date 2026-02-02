@@ -60,7 +60,11 @@ export default function ActiveWorkout() {
   const [workout, setWorkout] = useState<{ id: string; name: string; program_id: string } | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [lastWeekData, setLastWeekData] = useState<Record<string, LastWeekData>>({});
-  const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
+  const [expandedExercise, setExpandedExercise] = useState<string | null>(() => {
+    // Restore expanded exercise from sessionStorage when returning to page
+    const stored = sessionStorage.getItem(`workout-${workoutId}-expanded`);
+    return stored || null;
+  });
   const [entries, setEntries] = useState<Record<string, SetData[]>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -100,6 +104,15 @@ export default function ActiveWorkout() {
       }
     };
   }, []);
+
+  // Persist expanded exercise to sessionStorage
+  useEffect(() => {
+    if (expandedExercise) {
+      sessionStorage.setItem(`workout-${workoutId}-expanded`, expandedExercise);
+    } else {
+      sessionStorage.removeItem(`workout-${workoutId}-expanded`);
+    }
+  }, [expandedExercise, workoutId]);
 
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
@@ -165,10 +178,7 @@ export default function ActiveWorkout() {
         .sort((a, b) => a.order_index - b.order_index);
       setExercises(sortedExercises);
 
-      // Expand first exercise
-      if (sortedExercises.length > 0) {
-        setExpandedExercise(sortedExercises[0].id);
-      }
+      // Don't auto-expand any exercise - user starts with all collapsed
 
       // Fetch existing weeks to find or create a current one
       const { data: existingWeeks } = await supabase
