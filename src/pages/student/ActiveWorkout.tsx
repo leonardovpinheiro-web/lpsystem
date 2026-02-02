@@ -13,7 +13,6 @@ import {
   Play,
   Check,
   Save,
-  Clock,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -72,7 +71,7 @@ export default function ActiveWorkout() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
   const [currentWeekNumber, setCurrentWeekNumber] = useState<number>(1);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  
   const [workoutNotes, setWorkoutNotes] = useState("");
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
@@ -87,14 +86,6 @@ export default function ActiveWorkout() {
     }
   }, [user, workoutId]);
 
-  // Timer for elapsed workout time
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -114,16 +105,6 @@ export default function ActiveWorkout() {
     }
   }, [expandedExercise, workoutId]);
 
-  const formatTime = (seconds: number): string => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (hrs > 0) {
-      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const fetchWorkoutData = async () => {
     try {
@@ -522,15 +503,7 @@ export default function ActiveWorkout() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{workout.name}</h1>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 rounded-full">
-              <Clock className="w-4 h-4 text-primary" />
-              <span className="text-sm font-mono font-medium text-primary">
-                {formatTime(elapsedTime)}
-              </span>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold">{workout.name}</h1>
           <p className="text-muted-foreground">
             Semana {currentWeekNumber} • Registre suas séries
           </p>
