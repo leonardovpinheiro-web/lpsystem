@@ -295,7 +295,7 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
               </div>
             </CardHeader>
             {expandedWorkout === workout.id && (
-              <CardContent className="p-0">
+              <CardContent className="p-0 max-h-[70vh] overflow-y-auto">
                 <ExerciseTable 
                   workoutId={workout.id} 
                   ref={(ref) => {
