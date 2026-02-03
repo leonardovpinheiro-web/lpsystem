@@ -17,16 +17,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Dumbbell, ChevronRight, MoreVertical, Pencil, Trash2, Copy, Loader2, UserPlus } from "lucide-react";
+import { Plus, Dumbbell, ChevronRight, MoreVertical, Pencil, Trash2, Copy, Loader2, UserPlus, Check, ChevronsUpDown } from "lucide-react";
 import WorkoutEditor from "@/components/admin/WorkoutEditor";
 import ExerciseLibraryManager from "@/components/admin/ExerciseLibraryManager";
+import { cn } from "@/lib/utils";
 
 interface Program {
   id: string;
@@ -59,6 +66,7 @@ export default function Library() {
   });
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [cloning, setCloning] = useState(false);
+  const [studentSearchOpen, setStudentSearchOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -532,20 +540,58 @@ export default function Library() {
             <p className="text-sm text-muted-foreground">
               Programa: <strong>{cloneDialog.program?.name}</strong>
             </p>
-            <div>
+            <div className="space-y-2">
               <Label>Selecione o Aluno</Label>
-              <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha um aluno" />
-                </SelectTrigger>
-                <SelectContent>
-                  {students.map((student) => (
-                    <SelectItem key={student.id} value={student.id}>
-                      {student.profile?.full_name || student.profile?.email || "Sem nome"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={studentSearchOpen} onOpenChange={setStudentSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={studentSearchOpen}
+                    className="w-full justify-between"
+                  >
+                    {selectedStudent
+                      ? students.find((s) => s.id === selectedStudent)?.profile?.full_name || 
+                        students.find((s) => s.id === selectedStudent)?.profile?.email || 
+                        "Aluno selecionado"
+                      : "Buscar aluno..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Digite o nome do aluno..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum aluno encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {students.map((student) => (
+                          <CommandItem
+                            key={student.id}
+                            value={student.profile?.full_name || student.profile?.email || student.id}
+                            onSelect={() => {
+                              setSelectedStudent(student.id);
+                              setStudentSearchOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedStudent === student.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{student.profile?.full_name || "Sem nome"}</span>
+                              {student.profile?.email && (
+                                <span className="text-xs text-muted-foreground">{student.profile.email}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setCloneDialog({ open: false, program: null })} disabled={cloning}>
