@@ -250,88 +250,38 @@ export default function Students() {
     setIsAddingStudent(true);
 
     try {
-      // Create user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newStudentEmail,
-        password: newStudentPassword,
-        options: {
-          data: {
-            full_name: newStudentName,
-          },
+      // Call edge function to create student (uses admin API, doesn't affect current session)
+      const { data, error } = await supabase.functions.invoke("create-student", {
+        body: {
+          email: newStudentEmail,
+          password: newStudentPassword,
+          fullName: newStudentName,
         },
       });
 
-      if (authError) {
-        let message = "Erro ao criar aluno";
-        if (authError.message.includes("User already registered")) {
-          message = "Este email já está cadastrado";
-        }
+      if (error) {
         toast({
           variant: "destructive",
           title: "Erro",
-          description: message,
+          description: "Erro ao criar aluno",
         });
         setIsAddingStudent(false);
         return;
       }
 
-      if (!authData.user) {
+      if (data?.error) {
         toast({
           variant: "destructive",
           title: "Erro",
-          description: "Erro ao criar usuário",
+          description: data.error,
         });
         setIsAddingStudent(false);
         return;
-      }
-
-      // Create profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: authData.user.id,
-          full_name: newStudentName,
-          email: newStudentEmail,
-        });
-
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-      }
-
-      // Create student record
-      const { error: studentError } = await supabase
-        .from("students")
-        .insert({
-          user_id: authData.user.id,
-          status: "active",
-        });
-
-      if (studentError) {
-        console.error("Error creating student:", studentError);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Erro ao criar registro de aluno",
-        });
-        setIsAddingStudent(false);
-        return;
-      }
-
-      // Create student role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authData.user.id,
-          role: "student",
-        });
-
-      if (roleError) {
-        console.error("Error creating role:", roleError);
       }
 
       toast({
         title: "Sucesso",
-        description: "Aluno cadastrado com sucesso! Um email de confirmação foi enviado.",
+        description: "Aluno cadastrado com sucesso!",
       });
 
       setIsAddDialogOpen(false);
