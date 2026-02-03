@@ -186,6 +186,18 @@ export default function MyWorkouts() {
         <p className="text-muted-foreground">{program.name}</p>
       </div>
 
+      {/* Methodology Info Card */}
+      <Card className="border-muted bg-muted/30">
+        <CardContent className="p-4">
+          <p className="text-sm text-muted-foreground">
+            Confira a <strong>metodologia de treino</strong> acessando a seção <strong>Plataforma</strong> na barra lateral. Vídeos de 3-5 minutos sobre como extrair o máximo do seu treino.
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Na seção <strong>Guia de treino</strong> você encontra as principais informações resumidas.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Aerobic Info Card - Read Only */}
       {program.aerobic_info && (
         <Card className="border-primary/30 bg-primary/5">
