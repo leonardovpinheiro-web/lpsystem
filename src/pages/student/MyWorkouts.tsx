@@ -188,7 +188,7 @@ export default function MyWorkouts() {
       </div>
 
       {/* Methodology Info Card */}
-      <Card className="border-muted bg-muted/30">
+      <Card className="border-primary/30 bg-primary/5">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center shrink-0">
