@@ -1,46 +1,116 @@
 
-# Plano: Reordenação de Exercícios com Drag and Drop
 
-## Objetivo
-Implementar a funcionalidade de arrastar e soltar (drag and drop) para reordenar exercícios dentro de um treino, substituindo os botões de seta atuais.
+# Correção: Sessão Expirando Rapidamente
 
-## O que será feito
+## Problema Identificado
 
-### Interface do Usuário
-- Adicionar um ícone de "alça de arraste" (GripVertical) na primeira coluna de cada exercício
-- O cursor mudará para indicar que o item pode ser arrastado
-- Durante o arraste, o exercício terá opacidade reduzida como feedback visual
-- Os botões de seta (subir/descer) serão removidos
+Os logs de autenticação mostram o erro **"refresh_token_not_found"** (token de renovação não encontrado). Isso acontece quando:
+- O Supabase tenta renovar automaticamente o token de acesso (que expira a cada hora)
+- Mas não consegue encontrar o refresh token no armazenamento local
 
-### Comportamento
-- Ao arrastar um exercício sobre outro, eles trocarão de posição
-- A nova ordem será salva automaticamente no banco de dados
-- Em caso de erro, a interface voltará ao estado anterior
+## Causa Provável
 
-## Detalhes Técnicos
+O problema pode estar relacionado a:
+1. **Conflito entre abas/dispositivos**: Quando você faz login em outro dispositivo ou aba, o refresh token anterior é invalidado
+2. **Tratamento de erros de token**: Quando o refresh falha, o sistema não está lidando corretamente com a situação
 
-### Arquivo: `src/components/admin/ExerciseTable.tsx`
+## Solução
 
-1. **Adicionar estado para rastrear o exercício sendo arrastado:**
-   - Novo estado `draggedExerciseId`
+Vou melhorar o `AuthContext` para:
+1. **Tratar melhor o evento TOKEN_REFRESHED** para garantir que a sessão seja atualizada corretamente
+2. **Lidar com erros de refresh** mostrando feedback ao usuário quando necessário
+3. **Adicionar tratamento para SIGNED_OUT** garantindo que o estado seja limpo corretamente
 
-2. **Implementar handlers de drag and drop:**
-   - `handleDragStart`: marca o exercício como sendo arrastado
-   - `handleDragOver`: permite o drop no elemento
-   - `handleDrop`: reordena os exercícios e salva no banco
-   - `handleDragEnd`: limpa o estado ao finalizar
+## Alterações Técnicas
 
-3. **Atualizar a tabela:**
-   - Adicionar propriedades de drag na linha `<tr>` de cada exercício
-   - Adicionar coluna com ícone `GripVertical` como alça de arraste
-   - Aplicar classe de opacidade reduzida no item sendo arrastado
-   - Remover os botões ArrowUp e ArrowDown da coluna de ações
+### Arquivo: `src/contexts/AuthContext.tsx`
 
-4. **Lógica de reordenação:**
-   - Criar novo array com a ordem atualizada
-   - Atribuir novos valores de `order_index` sequenciais
-   - Salvar todas as alterações em paralelo no banco de dados
-   - Reverter em caso de erro
+1. **Melhorar o listener de eventos de autenticação:**
+   - Adicionar tratamento específico para o evento `TOKEN_REFRESHED`
+   - Verificar se houve erro no refresh e tratar adequadamente
+   - Garantir que o estado seja sincronizado corretamente
 
-### Padrão Seguido
-A implementação seguirá exatamente o mesmo padrão já utilizado para reordenação de treinos no `WorkoutEditor.tsx`, garantindo consistência na experiência do usuário.
+2. **Adicionar verificação periódica de sessão:**
+   - Verificar se a sessão ainda é válida quando o usuário retorna à aba
+   - Usar o evento `visibilitychange` do documento para detectar quando o usuário volta
+
+3. **Tratamento do evento SIGNED_OUT:**
+   - Limpar corretamente todo o estado quando o usuário for deslogado
+
+## Código da Solução
+
+```typescript
+useEffect(() => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    (event, session) => {
+      console.log("Auth event:", event);
+      
+      // Atualizar estado da sessão
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (event === 'SIGNED_OUT') {
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+      
+      if (session?.user) {
+        setTimeout(() => {
+          getUserRole(session.user.id).then((userRole) => {
+            setRole(userRole as AppRole);
+            setLoading(false);
+          });
+        }, 0);
+      } else {
+        setRole(null);
+        setLoading(false);
+      }
+    }
+  );
+
+  // Verificar sessão existente
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setSession(session);
+    setUser(session?.user ?? null);
+    
+    if (session?.user) {
+      getUserRole(session.user.id).then((userRole) => {
+        setRole(userRole as AppRole);
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+  });
+
+  // Verificar sessão quando usuário volta para a aba
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session && user) {
+          // Sessão expirou, limpar estado
+          setSession(null);
+          setUser(null);
+          setRole(null);
+        }
+      });
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  return () => {
+    subscription.unsubscribe();
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+}, []);
+```
+
+## Resultado Esperado
+
+Após a implementação:
+- A sessão será verificada quando o usuário retornar à aba
+- O sistema tratará melhor os eventos de autenticação
+- Se houver falha no refresh do token, o usuário será redirecionado para login de forma limpa
+
