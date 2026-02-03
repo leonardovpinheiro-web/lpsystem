@@ -43,6 +43,7 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [programName, setProgramName] = useState("");
   const [aerobicInfo, setAerobicInfo] = useState("");
+  const [draggedWorkoutId, setDraggedWorkoutId] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Store refs to ExerciseTable components for flushing
@@ -221,6 +222,74 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
     }
   };
 
+  // Drag and drop handlers for reordering workouts
+  const handleDragStart = (e: React.DragEvent, workoutId: string) => {
+    setDraggedWorkoutId(workoutId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetWorkoutId: string) => {
+    e.preventDefault();
+    
+    if (!draggedWorkoutId || draggedWorkoutId === targetWorkoutId) {
+      setDraggedWorkoutId(null);
+      return;
+    }
+
+    const draggedIndex = workouts.findIndex(w => w.id === draggedWorkoutId);
+    const targetIndex = workouts.findIndex(w => w.id === targetWorkoutId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedWorkoutId(null);
+      return;
+    }
+
+    // Create new array with reordered workouts
+    const newWorkouts = [...workouts];
+    const [draggedWorkout] = newWorkouts.splice(draggedIndex, 1);
+    newWorkouts.splice(targetIndex, 0, draggedWorkout);
+
+    // Update order_index for all workouts
+    const updatedWorkouts = newWorkouts.map((w, index) => ({
+      ...w,
+      order_index: index,
+    }));
+
+    // Optimistically update UI
+    setWorkouts(updatedWorkouts);
+    setDraggedWorkoutId(null);
+
+    // Save new order to database
+    const updates = updatedWorkouts.map(w => 
+      supabase
+        .from("workouts")
+        .update({ order_index: w.order_index })
+        .eq("id", w.id)
+    );
+
+    const results = await Promise.all(updates);
+    const hasError = results.some(r => r.error);
+
+    if (hasError) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao reordenar treinos",
+      });
+      // Revert on error
+      fetchWorkouts();
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedWorkoutId(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -260,18 +329,30 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
 
       <div className="space-y-4">
         {workouts.map((workout) => (
-          <Card key={workout.id} className="overflow-hidden">
+          <Card 
+            key={workout.id} 
+            className={`overflow-hidden transition-opacity ${
+              draggedWorkoutId === workout.id ? "opacity-50" : ""
+            }`}
+            draggable
+            onDragStart={(e) => handleDragStart(e, workout.id)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, workout.id)}
+            onDragEnd={handleDragEnd}
+          >
             <CardHeader
               className="cursor-pointer bg-secondary/50 py-3"
               onClick={() => handleToggleWorkout(workout.id)}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
                   <Input
                     value={workout.name}
                     onChange={(e) => handleRenameWorkout(workout.id, e.target.value)}
                     onClick={(e) => e.stopPropagation()}
+                    onDragStart={(e) => e.stopPropagation()}
+                    draggable={false}
                     className="font-semibold bg-transparent border-0 focus:ring-1 w-auto"
                   />
                 </div>
