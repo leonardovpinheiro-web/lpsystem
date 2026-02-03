@@ -509,6 +509,12 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
         </Button>
       </div>
 
+      <VideoPlayerModal
+        open={videoModalOpen}
+        onOpenChange={setVideoModalOpen}
+        videoUrl={selectedVideoUrl}
+        title={selectedExerciseName}
+      />
     </div>
   );
 });
