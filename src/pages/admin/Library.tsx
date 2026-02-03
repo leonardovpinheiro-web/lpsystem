@@ -26,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Dumbbell, ChevronRight, MoreVertical, Pencil, Trash2, Copy, Loader2, UserPlus } from "lucide-react";
 import WorkoutEditor from "@/components/admin/WorkoutEditor";
+import ExerciseLibraryManager from "@/components/admin/ExerciseLibraryManager";
 
 interface Program {
   id: string;
@@ -370,6 +371,9 @@ export default function Library() {
           Crie programas de treino pré-configurados para clonar aos alunos
         </p>
       </div>
+
+      {/* Exercise Library Manager */}
+      <ExerciseLibraryManager />
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Programas Template</h2>
