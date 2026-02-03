@@ -393,7 +393,7 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
             <th className="w-20">Séries</th>
             <th className="w-24">Reps</th>
             <th className="w-24">Técnica</th>
-            <th className="w-24">Descanso</th>
+            <th className="w-24">Descanso (s)</th>
             <th className="min-w-[150px]">Observações</th>
             <th className="w-24">Ações</th>
           </tr>

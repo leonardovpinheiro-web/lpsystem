@@ -638,7 +638,7 @@ export default function ActiveWorkout() {
                     {/* Rest time */}
                     {exercise.rest_seconds && (
                       <p className="mt-2 text-sm text-muted-foreground">
-                        Descanso: {exercise.rest_seconds}
+                        Descanso (s): {exercise.rest_seconds}
                       </p>
                     )}
                   </CardContent>
