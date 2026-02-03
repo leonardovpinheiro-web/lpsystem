@@ -25,8 +25,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth event:", event);
+        
+        // Atualizar estado da sessão
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Tratamento específico para SIGNED_OUT
+        if (event === 'SIGNED_OUT') {
+          setRole(null);
+          setLoading(false);
+          return;
+        }
         
         // Defer role fetching with setTimeout
         if (session?.user) {
@@ -58,7 +68,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Verificar sessão quando usuário volta para a aba
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session) {
+            // Sessão expirou, limpar estado
+            setSession(null);
+            setUser(null);
+            setRole(null);
+          } else {
+            // Atualizar sessão se ainda válida
+            setSession(session);
+            setUser(session?.user ?? null);
+          }
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const value = {
