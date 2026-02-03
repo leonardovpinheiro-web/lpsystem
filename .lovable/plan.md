@@ -1,107 +1,46 @@
 
+# Plano: Reordenação de Exercícios com Drag and Drop
 
-# Plano: Seção "Dieta" com Upload de PDF
-
-## Resumo
-
-Criar uma nova seção "Dieta" no menu lateral para alunos, onde poderão acessar seu plano alimentar em PDF. O admin terá a capacidade de fazer upload e gerenciar os arquivos de dieta de cada aluno.
-
----
+## Objetivo
+Implementar a funcionalidade de arrastar e soltar (drag and drop) para reordenar exercícios dentro de um treino, substituindo os botões de seta atuais.
 
 ## O que será feito
 
-### Para o Aluno
-- Nova opção "Dieta" no menu lateral (entre Logbook e Guia de treino)
-- Página simples com o texto "Acesse sua dieta abaixo:"
-- Botão "Acessar dieta" que abre o PDF em nova aba
-- Mensagem amigável quando não houver dieta cadastrada
+### Interface do Usuário
+- Adicionar um ícone de "alça de arraste" (GripVertical) na primeira coluna de cada exercício
+- O cursor mudará para indicar que o item pode ser arrastado
+- Durante o arraste, o exercício terá opacidade reduzida como feedback visual
+- Os botões de seta (subir/descer) serão removidos
 
-### Para o Admin
-- No dialog de edição do aluno, nova seção para upload de PDF
-- Possibilidade de visualizar a dieta atual ou fazer upload de uma nova
-- Botão para remover a dieta existente
-
----
-
-## Fluxo Visual
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                     ALUNO - Página Dieta                    │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│                   Minha Dieta                               │
-│                   Seu plano alimentar                       │
-│                                                             │
-│   ┌───────────────────────────────────────────────────┐     │
-│   │                                                   │     │
-│   │        🍎 Acesse sua dieta abaixo:                │     │
-│   │                                                   │     │
-│   │           [ Acessar dieta ]                       │     │
-│   │                                                   │     │
-│   └───────────────────────────────────────────────────┘     │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│                 ADMIN - Dialog Editar Aluno                 │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   Nome: [João Silva]                                        │
-│   Email: [joao@email.com]                                   │
-│   Status: [Ativo ▼]                                         │
-│   Observações: [____________]                               │
-│                                                             │
-│   ─────────────────────────────────────────────             │
-│   Dieta do Aluno                                            │
-│                                                             │
-│   [ dieta_joao.pdf ]  [ Ver ]  [ Remover ]                  │
-│                                                             │
-│   ou                                                        │
-│                                                             │
-│   [ Escolher arquivo PDF... ]                               │
-│                                                             │
-│                       [ Cancelar ]  [ Salvar ]              │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
+### Comportamento
+- Ao arrastar um exercício sobre outro, eles trocarão de posição
+- A nova ordem será salva automaticamente no banco de dados
+- Em caso de erro, a interface voltará ao estado anterior
 
 ## Detalhes Técnicos
 
-### 1. Banco de Dados
+### Arquivo: `src/components/admin/ExerciseTable.tsx`
 
-**Adicionar coluna na tabela `students`:**
-- `diet_url` (TEXT, nullable) - URL pública do PDF no storage
+1. **Adicionar estado para rastrear o exercício sendo arrastado:**
+   - Novo estado `draggedExerciseId`
 
-### 2. Storage
+2. **Implementar handlers de drag and drop:**
+   - `handleDragStart`: marca o exercício como sendo arrastado
+   - `handleDragOver`: permite o drop no elemento
+   - `handleDrop`: reordena os exercícios e salva no banco
+   - `handleDragEnd`: limpa o estado ao finalizar
 
-**Criar bucket `diets`:**
-- Bucket público para PDFs
-- Política: Admin pode fazer upload/delete, qualquer autenticado pode ler
+3. **Atualizar a tabela:**
+   - Adicionar propriedades de drag na linha `<tr>` de cada exercício
+   - Adicionar coluna com ícone `GripVertical` como alça de arraste
+   - Aplicar classe de opacidade reduzida no item sendo arrastado
+   - Remover os botões ArrowUp e ArrowDown da coluna de ações
 
-### 3. Arquivos a criar/modificar
+4. **Lógica de reordenação:**
+   - Criar novo array com a ordem atualizada
+   - Atribuir novos valores de `order_index` sequenciais
+   - Salvar todas as alterações em paralelo no banco de dados
+   - Reverter em caso de erro
 
-| Arquivo | Ação |
-|---------|------|
-| `src/pages/student/Diet.tsx` | Criar - Página da dieta do aluno |
-| `src/components/layout/Sidebar.tsx` | Modificar - Adicionar link "Dieta" |
-| `src/pages/admin/Students.tsx` | Modificar - Adicionar upload de PDF no dialog |
-| `src/App.tsx` | Modificar - Adicionar rota /diet |
-
-### 4. Políticas RLS
-
-- Storage: Admin pode inserir/deletar, usuários autenticados podem visualizar
-- Coluna diet_url: Mesmas políticas da tabela students
-
----
-
-## Ordem de Implementação
-
-1. Criar bucket de storage e políticas
-2. Adicionar coluna `diet_url` na tabela students
-3. Criar página `Diet.tsx` para o aluno
-4. Adicionar rota no `App.tsx`
-5. Adicionar link no menu lateral `Sidebar.tsx`
-6. Modificar dialog de edição em `Students.tsx` para upload
-
+### Padrão Seguido
+A implementação seguirá exatamente o mesmo padrão já utilizado para reordenação de treinos no `WorkoutEditor.tsx`, garantindo consistência na experiência do usuário.
