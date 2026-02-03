@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ArrowUp, ArrowDown, Play, Loader2 } from "lucide-react";
+import { Plus, Trash2, Play, Loader2, GripVertical } from "lucide-react";
 import ExerciseAutocomplete from "./ExerciseAutocomplete";
 import VideoPlayerModal from "@/components/VideoPlayerModal";
 
@@ -41,6 +41,7 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
   const [selectedExerciseName, setSelectedExerciseName] = useState<string>("");
+  const [draggedExerciseId, setDraggedExerciseId] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Track pending saves with their timeouts
@@ -266,48 +267,68 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
     }
   };
 
-  const handleMoveExercise = async (exerciseId: string, direction: "up" | "down") => {
-    const currentIndex = exercises.findIndex(e => e.id === exerciseId);
-    if (
-      (direction === "up" && currentIndex === 0) ||
-      (direction === "down" && currentIndex === exercises.length - 1)
-    ) {
+  // Drag and drop handlers
+  const handleDragStart = (exerciseId: string) => {
+    setDraggedExerciseId(exerciseId);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (targetExerciseId: string) => {
+    if (!draggedExerciseId || draggedExerciseId === targetExerciseId) {
+      setDraggedExerciseId(null);
       return;
     }
 
-    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    const otherExercise = exercises[newIndex];
-    const currentExercise = exercises[currentIndex];
+    const draggedIndex = exercises.findIndex(e => e.id === draggedExerciseId);
+    const targetIndex = exercises.findIndex(e => e.id === targetExerciseId);
 
-    // Update local state immediately for responsive UI
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedExerciseId(null);
+      return;
+    }
+
+    // Create new array with reordered exercises
     const newExercises = [...exercises];
-    const tempOrder = currentExercise.order_index;
-    newExercises[currentIndex] = { ...currentExercise, order_index: otherExercise.order_index };
-    newExercises[newIndex] = { ...otherExercise, order_index: tempOrder };
-    newExercises.sort((a, b) => a.order_index - b.order_index);
-    setExercises(newExercises);
+    const [draggedExercise] = newExercises.splice(draggedIndex, 1);
+    newExercises.splice(targetIndex, 0, draggedExercise);
 
-    // Save to database immediately
-    const [result1, result2] = await Promise.all([
+    // Assign new order_index values
+    const updatedExercises = newExercises.map((exercise, index) => ({
+      ...exercise,
+      order_index: index,
+    }));
+
+    // Update local state immediately
+    setExercises(updatedExercises);
+    setDraggedExerciseId(null);
+
+    // Save all changes to database in parallel
+    const updatePromises = updatedExercises.map((exercise) =>
       supabase
         .from("exercises")
-        .update({ order_index: otherExercise.order_index })
-        .eq("id", currentExercise.id),
-      supabase
-        .from("exercises")
-        .update({ order_index: currentExercise.order_index })
-        .eq("id", otherExercise.id),
-    ]);
+        .update({ order_index: exercise.order_index })
+        .eq("id", exercise.id)
+    );
 
-    if (result1.error || result2.error) {
+    const results = await Promise.all(updatePromises);
+    const hasError = results.some((r) => r.error);
+
+    if (hasError) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Erro ao reordenar exercício",
+        description: "Erro ao reordenar exercícios",
       });
       // Revert on error
       fetchExercises();
     }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedExerciseId(null);
   };
 
   const handleExerciseNameChange = (exerciseId: string, name: string, videoUrl: string | null) => {
@@ -387,6 +408,7 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
       <table className="excel-table min-w-full">
         <thead>
           <tr>
+            <th className="w-8"></th>
             <th className="w-12">#</th>
             <th className="min-w-[200px]">Exercício</th>
             <th className="w-16">Vídeo</th>
@@ -395,12 +417,23 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
             <th className="w-24">Técnica</th>
             <th className="w-24">Descanso (s)</th>
             <th className="min-w-[150px]">Observações</th>
-            <th className="w-24">Ações</th>
+            <th className="w-16">Ações</th>
           </tr>
         </thead>
         <tbody>
           {exercises.map((exercise, index) => (
-            <tr key={exercise.id}>
+            <tr
+              key={exercise.id}
+              draggable
+              onDragStart={() => handleDragStart(exercise.id)}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(exercise.id)}
+              onDragEnd={handleDragEnd}
+              className={draggedExerciseId === exercise.id ? "opacity-50" : ""}
+            >
+              <td className="cursor-grab active:cursor-grabbing">
+                <GripVertical className="w-4 h-4 text-muted-foreground mx-auto" />
+              </td>
               <td className="text-center font-medium text-muted-foreground">
                 {index + 1}
               </td>
@@ -468,25 +501,7 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
                 />
               </td>
               <td>
-                <div className="flex items-center gap-1 justify-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handleMoveExercise(exercise.id, "up")}
-                    disabled={index === 0}
-                  >
-                    <ArrowUp className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handleMoveExercise(exercise.id, "down")}
-                    disabled={index === exercises.length - 1}
-                  >
-                    <ArrowDown className="w-3 h-3" />
-                  </Button>
+                <div className="flex items-center justify-center">
                   <Button
                     variant="ghost"
                     size="icon"
