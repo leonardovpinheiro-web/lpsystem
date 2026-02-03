@@ -278,10 +278,7 @@ export default function MyWorkouts() {
                         <th className="w-20">Séries</th>
                         <th className="w-24">Reps</th>
                         <th className="w-24">Técnica</th>
-                        <th className="w-24">
-                          <Clock className="w-4 h-4 inline mr-1" />
-                          Descanso
-                        </th>
+                        <th className="w-24">Descanso</th>
                         <th>Obs</th>
                       </tr>
                     </thead>
