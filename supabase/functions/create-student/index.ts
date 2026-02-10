@@ -62,39 +62,32 @@ serve(async (req) => {
 
     const userId = userData.user.id;
 
-    // Create profile
-    const { error: profileError } = await supabaseAdmin.from("profiles").insert({
+    // Create profile (upsert to handle trigger-created records)
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
       user_id: userId,
       full_name: fullName,
       email: email,
-    });
+    }, { onConflict: "user_id" });
 
     if (profileError) {
       console.error("Error creating profile:", profileError);
     }
 
-    // Create student record
-    const { error: studentError } = await supabaseAdmin.from("students").insert({
+    // Create student record (upsert to handle trigger-created records)
+    const { error: studentError } = await supabaseAdmin.from("students").upsert({
       user_id: userId,
       status: "active",
-    });
+    }, { onConflict: "user_id" });
 
     if (studentError) {
       console.error("Error creating student:", studentError);
-      return new Response(
-        JSON.stringify({ error: "Erro ao criar registro de aluno" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
     }
 
-    // Create student role
-    const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
+    // Create student role (upsert to handle trigger-created records)
+    const { error: roleError } = await supabaseAdmin.from("user_roles").upsert({
       user_id: userId,
       role: "student",
-    });
+    }, { onConflict: "user_id" });
 
     if (roleError) {
       console.error("Error creating role:", roleError);
