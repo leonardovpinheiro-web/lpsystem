@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ClipboardList, Plus, Dumbbell, Play } from "lucide-react";
+import LogbookWeekColumn from "@/components/logbook/LogbookWeekColumn";
 import {
   Select,
   SelectContent,
@@ -60,6 +61,7 @@ export default function Logbook() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<string>("");
   const [weeks, setWeeks] = useState<LogbookWeek[]>([]);
+  const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [activeWeek, setActiveWeek] = useState<string>("1");
   const [loading, setLoading] = useState(true);
@@ -493,93 +495,24 @@ export default function Logbook() {
                 {/* Scrollable weeks columns */}
                 <div className="flex overflow-x-auto">
                   {weeks.map((week) => (
-                    <div key={week.id} className="flex-shrink-0 min-w-[320px] border-r border-border last:border-r-0">
-                      {/* Week header */}
-                      <div className="h-14 flex items-center justify-center border-b border-border bg-muted/50">
-                        <h3 className="text-lg font-bold">Semana {week.week_number}</h3>
-                      </div>
-                      
-                      {/* Series headers */}
-                      <div className="h-8 flex border-b border-border bg-muted/30">
-                        {[1, 2, 3, 4].map((setNum) => (
-                          <div key={setNum} className="flex-1 flex items-center justify-center gap-1 border-r border-border last:border-r-0">
-                            <span className="text-xs text-muted-foreground font-medium">S{setNum}</span>
-                            <span className="text-[10px] text-muted-foreground">(kg/rep)</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Exercise rows */}
-                      {allExercises.map((exercise, index) => {
-                        const entry = getEntryForExercise(week, exercise.id);
-                        return (
-                          <div
-                            key={`${week.id}-${exercise.id}`}
-                            className={`h-12 flex ${
-                              index % 2 === 0 ? "bg-background" : "bg-muted/20"
-                            }`}
-                          >
-                            {[1, 2, 3, 4].map((setNum) => (
-                              <div
-                                key={`set-${setNum}`}
-                                className="flex-1 flex items-center justify-center gap-1 border-r border-border last:border-r-0 px-1"
-                              >
-                                {entry ? (
-                                  <>
-                                    <Input
-                                      type="number"
-                                      step="0.5"
-                                      className="h-8 w-12 text-center text-xs p-1"
-                                      value={entry[`set${setNum}_weight` as keyof LogbookEntry] ?? ""}
-                                      onChange={(e) =>
-                                        handleInputChange(
-                                          entry.id,
-                                          `set${setNum}_weight`,
-                                          e.target.value,
-                                          week.week_number
-                                        )
-                                      }
-                                      onBlur={(e) =>
-                                        handleInputBlur(entry.id, `set${setNum}_weight`, e.target.value)
-                                      }
-                                      placeholder="kg"
-                                    />
-                                    <Input
-                                      type="number"
-                                      className="h-8 w-10 text-center text-xs p-1"
-                                      value={entry[`set${setNum}_reps` as keyof LogbookEntry] ?? ""}
-                                      onChange={(e) =>
-                                        handleInputChange(
-                                          entry.id,
-                                          `set${setNum}_reps`,
-                                          e.target.value,
-                                          week.week_number
-                                        )
-                                      }
-                                      onBlur={(e) =>
-                                        handleInputBlur(entry.id, `set${setNum}_reps`, e.target.value)
-                                      }
-                                      placeholder="r"
-                                    />
-                                  </>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">-</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })}
-                      
-                      {/* Week notes */}
-                      {week.notes && (
-                        <div className="h-auto min-h-[40px] p-2 bg-muted/30 border-t border-border">
-                          <p className="text-xs text-muted-foreground">
-                            <span className="font-medium">Comentário:</span> {week.notes}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    <LogbookWeekColumn
+                      key={week.id}
+                      week={week}
+                      collapsed={collapsedWeeks.has(week.id)}
+                      onToggle={() => {
+                        setCollapsedWeeks((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(week.id)) next.delete(week.id);
+                          else next.add(week.id);
+                          return next;
+                        });
+                      }}
+                      allExercises={allExercises}
+                      getEntryForExercise={getEntryForExercise}
+                      variant="editable"
+                      onInputChange={handleInputChange}
+                      onInputBlur={handleInputBlur}
+                    />
                   ))}
                 </div>
               </div>
