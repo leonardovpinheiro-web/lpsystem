@@ -1,33 +1,46 @@
 
 
-## Novo Layout do Curso - Video + Lista Lateral
+## Semanas Colapsaveis no Logbook
 
 ### O que muda
 
-O layout atual empilha tudo verticalmente: video em cima, lista de aulas embaixo. O novo layout coloca a **lista de aulas ao lado do video** em telas maiores (desktop/tablet), mantendo o layout vertical no mobile.
+Cada coluna de semana no logbook podera ser minimizada/expandida clicando no cabecalho. O estado persiste enquanto o usuario navega (nao reseta ao scrollar ou interagir com outros elementos). Um novo componente dedicado `LogbookWeekColumn` encapsula toda a logica de colapso.
 
-### Estrutura do novo layout
+### Comportamento
 
-```text
-+------------------------------------------+------------------+
-|                                          |  Conteudo Curso  |
-|           VIDEO / CONTEUDO               |  Modulo 1        |
-|                                          |   - Aula 1 (v)   |
-|                                          |   - Aula 2       |
-|                                          |  Modulo 2        |
-|          [Nav: Anterior | OK | Prox]     |   - Aula 3       |
-+------------------------------------------+------------------+
-```
+- Clique no cabecalho da semana alterna entre expandido e minimizado
+- Minimizada: coluna estreita (~48px) mostrando apenas "S{numero}" na vertical e um icone de seta
+- Expandida: layout atual completo com 4 series e dados
+- Todas as semanas iniciam expandidas por padrao
+- O estado e independente por semana (multiplas podem estar em qualquer estado)
 
-No mobile, permanece vertical (video em cima, lista embaixo).
+### Detalhes Tecnicos
 
-### Mudancas tecnicas
+**Novo componente: `src/components/logbook/LogbookWeekColumn.tsx`**
 
-**Arquivo: `src/pages/student/CourseViewer.tsx`**
+Componente reutilizavel que recebe:
+- `week` (dados da semana)
+- `collapsed` (boolean)
+- `onToggle` (callback)
+- `allExercises` (lista de exercicios)
+- `getEntryForExercise` (funcao auxiliar)
+- Variante `readonly` (admin) vs `editable` (student) via prop
 
-1. Envolver o bloco de conteudo (video + card de lista) em um container flex horizontal (`flex-col lg:flex-row`).
-2. O video/conteudo da aula ocupa a maior parte (`lg:flex-1`).
-3. A lista de aulas (card "Conteudo do Curso") fica como sidebar lateral com largura fixa (`lg:w-80 xl:w-96`) e scroll independente (`lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto`).
-4. A lista de aulas muda de grid (cards em grid de 2-3 colunas) para **lista vertical simples** (1 coluna).
-5. Manter responsividade: no mobile continua empilhado verticalmente.
+Quando `collapsed=true`:
+- Renderiza coluna com `w-12` e texto "S{numero}" rotacionado verticalmente
+- Icone `ChevronRight` indicando que pode expandir
+
+Quando `collapsed=false`:
+- Renderiza o conteudo atual completo (header, sub-headers de series, linhas de exercicio)
+- Icone `ChevronLeft` no cabecalho para minimizar
+
+**Alteracoes em `src/pages/admin/StudentLogbook.tsx`:**
+- Adicionar estado `collapsedWeeks: Set<string>` e funcao `toggleWeek`
+- Substituir o bloco inline de renderizacao de cada semana pelo componente `LogbookWeekColumn`
+
+**Alteracoes em `src/pages/student/Logbook.tsx`:**
+- Mesma logica de estado `collapsedWeeks` e `toggleWeek`
+- Usar o mesmo componente `LogbookWeekColumn` com a variante editavel (inputs ao inves de texto)
+
+Nenhuma alteracao no banco de dados e necessaria.
 
