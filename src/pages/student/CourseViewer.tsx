@@ -339,78 +339,80 @@ export default function CourseViewer() {
         </Button>
       </div>
 
-      <div className="space-y-4 sm:space-y-6">
-        {/* Lesson content - Video */}
-        {currentLesson ? (
-          <div className="space-y-3 sm:space-y-4">
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground mb-2">
-                  <span className="truncate max-w-[150px] sm:max-w-none">
-                    {modules[currentModuleIndex]?.title}
-                  </span>
-                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                  <span>Aula {currentLessonIndex + 1}</span>
-                </div>
-                <CardTitle className="text-lg sm:text-xl">
-                  {currentLesson.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
-                {currentLesson.video_url && (
-                  <div className="aspect-video rounded-md sm:rounded-lg overflow-hidden bg-black -mx-4 sm:mx-0">
-                    <iframe
-                      src={getVideoEmbedUrl(currentLesson.video_url)}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+        {/* Main content - Video + Navigator */}
+        <div className="lg:flex-1 min-w-0 space-y-3 sm:space-y-4">
+          {currentLesson ? (
+            <>
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground mb-2">
+                    <span className="truncate max-w-[150px] sm:max-w-none">
+                      {modules[currentModuleIndex]?.title}
+                    </span>
+                    <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span>Aula {currentLessonIndex + 1}</span>
                   </div>
-                )}
-
-                {currentLesson.content && (
-                  <div className="mt-4 pt-4 border-t">
-                    <h3 className="text-sm font-semibold text-foreground mb-2">
-                      Descrição
-                    </h3>
-                    <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground">
-                      <p className="whitespace-pre-wrap">{currentLesson.content}</p>
+                  <CardTitle className="text-lg sm:text-xl">
+                    {currentLesson.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
+                  {currentLesson.video_url && (
+                    <div className="aspect-video rounded-md sm:rounded-lg overflow-hidden bg-black -mx-4 sm:mx-0">
+                      <iframe
+                        src={getVideoEmbedUrl(currentLesson.video_url)}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {!currentLesson.video_url && !currentLesson.content && (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                    <Play className="w-12 h-12 mb-4" />
-                    <p>Conteúdo da aula não disponível</p>
-                  </div>
-                )}
+                  {currentLesson.content && (
+                    <div className="mt-4 pt-4 border-t">
+                      <h3 className="text-sm font-semibold text-foreground mb-2">
+                        Descrição
+                      </h3>
+                      <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground">
+                        <p className="whitespace-pre-wrap">{currentLesson.content}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!currentLesson.video_url && !currentLesson.content && (
+                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                      <Play className="w-12 h-12 mb-4" />
+                      <p>Conteúdo da aula não disponível</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <LessonNavigator
+                hasPrevious={hasPreviousLesson()}
+                hasNext={hasNextLesson()}
+                isCompleted={currentLesson.completed}
+                isLoading={markingComplete}
+                onPrevious={goToPreviousLesson}
+                onNext={goToNextLesson}
+                onMarkComplete={markAsComplete}
+              />
+            </>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <BookOpen className="w-12 h-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  Selecione uma aula para começar
+                </p>
               </CardContent>
             </Card>
+          )}
+        </div>
 
-            <LessonNavigator
-              hasPrevious={hasPreviousLesson()}
-              hasNext={hasNextLesson()}
-              isCompleted={currentLesson.completed}
-              isLoading={markingComplete}
-              onPrevious={goToPreviousLesson}
-              onNext={goToNextLesson}
-              onMarkComplete={markAsComplete}
-            />
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <BookOpen className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                Selecione uma aula para começar
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Course content - Lessons list */}
-        <Card>
+        {/* Sidebar - Lesson list */}
+        <Card className="lg:w-80 xl:w-96 flex-shrink-0 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto">
           <CardHeader className="pb-2 p-4 sm:p-6 sm:pb-2">
             <CardTitle className="text-base sm:text-lg">Conteúdo do Curso</CardTitle>
           </CardHeader>
@@ -438,13 +440,13 @@ export default function CourseViewer() {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pb-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2 px-3 sm:px-4 pb-3 sm:pb-4">
+                    <div className="flex flex-col gap-0.5 px-2 sm:px-3 pb-3 sm:pb-4">
                       {mod.lessons.map((lesson, lessonIndex) => (
                         <button
                           key={lesson.id}
                           onClick={() => selectLesson(moduleIndex, lessonIndex)}
                           className={cn(
-                            "flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-md text-left transition-colors",
+                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors",
                             currentLesson?.id === lesson.id
                               ? "bg-primary text-primary-foreground"
                               : "hover:bg-muted"
