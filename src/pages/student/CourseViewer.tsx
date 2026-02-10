@@ -339,7 +339,7 @@ export default function CourseViewer() {
         </Button>
       </div>
 
-      <div className="flex flex-col lg:flex-row-reverse gap-4 sm:gap-6">
+      <div className="flex flex-col-reverse lg:flex-row-reverse gap-4 sm:gap-6">
         {/* Main content - Video + Navigator */}
         <div className="lg:flex-1 min-w-0 space-y-3 sm:space-y-4">
           {currentLesson ? (
