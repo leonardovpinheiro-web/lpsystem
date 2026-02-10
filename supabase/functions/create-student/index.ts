@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,6 +92,32 @@ serve(async (req) => {
 
     if (roleError) {
       console.error("Error creating role:", roleError);
+    }
+
+    // Send welcome email with credentials via Resend
+    try {
+      const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+      await resend.emails.send({
+        from: "Lovable <lovable@lvpinheiro.com.br>",
+        to: [email],
+        subject: "Bem-vindo! Suas credenciais de acesso",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #333;">Bem-vindo(a), ${fullName}!</h1>
+            <p>Sua conta foi criada com sucesso. Aqui estão suas credenciais de acesso:</p>
+            <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <p style="margin: 4px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 4px 0;"><strong>Senha:</strong> ${password}</p>
+            </div>
+            <p>Recomendamos que você altere sua senha após o primeiro acesso.</p>
+            <p style="color: #666; font-size: 14px;">Este é um email automático, por favor não responda.</p>
+          </div>
+        `,
+      });
+      console.log("Welcome email sent to:", email);
+    } catch (emailError) {
+      console.error("Error sending welcome email:", emailError);
+      // Don't fail the student creation if email fails
     }
 
     return new Response(
