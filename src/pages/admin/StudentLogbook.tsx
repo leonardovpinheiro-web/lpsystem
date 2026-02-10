@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ClipboardList, Play } from "lucide-react";
+import LogbookWeekColumn from "@/components/logbook/LogbookWeekColumn";
 import {
   Select,
   SelectContent,
@@ -68,6 +69,7 @@ export default function StudentLogbook() {
   const [selectedWorkout, setSelectedWorkout] = useState<string>("");
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [weeks, setWeeks] = useState<LogbookWeek[]>([]);
+  const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
@@ -366,56 +368,22 @@ export default function StudentLogbook() {
                 {/* Scrollable weeks columns */}
                 <div className="flex overflow-x-auto">
                   {weeks.map((week) => (
-                    <div key={week.id} className="flex-shrink-0 min-w-[320px] border-r border-border last:border-r-0">
-                      {/* Week header */}
-                      <div className="h-14 flex items-center justify-center border-b border-border bg-muted/50">
-                        <h3 className="text-lg font-bold">Semana {week.week_number}</h3>
-                      </div>
-                      
-                      {/* Series headers */}
-                      <div className="h-8 flex border-b border-border bg-muted/30">
-                        {[1, 2, 3, 4].map((setNum) => (
-                          <div key={setNum} className="flex-1 flex items-center justify-center gap-1 border-r border-border last:border-r-0">
-                            <span className="text-xs text-muted-foreground font-medium">S{setNum}</span>
-                            <span className="text-[10px] text-muted-foreground">(kg/rep)</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Exercise rows */}
-                      {allExercises.map((exercise, index) => {
-                        const entry = getEntryForExercise(week, exercise.id);
-                        return (
-                          <div
-                            key={`${week.id}-${exercise.id}`}
-                            className={`h-12 flex ${
-                              index % 2 === 0 ? "bg-background" : "bg-muted/20"
-                            }`}
-                          >
-                            {[1, 2, 3, 4].map((setNum) => (
-                              <div
-                                key={`set-${setNum}`}
-                                className="flex-1 flex items-center justify-center gap-2 border-r border-border last:border-r-0 px-2"
-                              >
-                                {entry ? (
-                                  <>
-                                    <span className="text-sm font-medium">
-                                      {entry[`set${setNum}_weight` as keyof LogbookEntry] ?? "-"}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">/</span>
-                                    <span className="text-sm">
-                                      {entry[`set${setNum}_reps` as keyof LogbookEntry] ?? "-"}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">-</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <LogbookWeekColumn
+                      key={week.id}
+                      week={week}
+                      collapsed={collapsedWeeks.has(week.id)}
+                      onToggle={() => {
+                        setCollapsedWeeks((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(week.id)) next.delete(week.id);
+                          else next.add(week.id);
+                          return next;
+                        });
+                      }}
+                      allExercises={allExercises}
+                      getEntryForExercise={getEntryForExercise}
+                      variant="readonly"
+                    />
                   ))}
                 </div>
               </div>
