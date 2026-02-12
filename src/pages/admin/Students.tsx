@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, User, MoreVertical, Loader2, Mail, ClipboardList, Dumbbell, Upload, FileText, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Search, User, MoreVertical, Loader2, Mail, ClipboardList, Dumbbell, Upload, FileText, Trash2, ExternalLink, AlertTriangle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -57,6 +57,12 @@ export default function Students() {
   const [editNotes, setEditNotes] = useState("");
   const [editDietUrl, setEditDietUrl] = useState<string | null>(null);
   const [isUploadingDiet, setIsUploadingDiet] = useState(false);
+
+  // Delete confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteNameInput, setDeleteNameInput] = useState("");
+  const [deleteNameError, setDeleteNameError] = useState("");
+  const [isDeletingStudent, setIsDeletingStudent] = useState(false);
 
   // Form state for adding new student
   const [newStudentName, setNewStudentName] = useState("");
@@ -120,7 +126,48 @@ export default function Students() {
     setEditStatus(student.status);
     setEditNotes(student.admin_notes || "");
     setEditDietUrl(student.diet_url || null);
+    setShowDeleteConfirm(false);
+    setDeleteNameInput("");
+    setDeleteNameError("");
     setIsDialogOpen(true);
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!editingStudent) return;
+
+    const firstName = editingStudent.profile?.full_name?.split(" ")[0] || "";
+    if (deleteNameInput.trim().toLowerCase() !== firstName.toLowerCase()) {
+      setDeleteNameError(`Nome incorreto. Digite "${firstName}" para confirmar.`);
+      return;
+    }
+
+    setIsDeletingStudent(true);
+    setDeleteNameError("");
+
+    try {
+      const { error } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", editingStudent.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Aluno excluído com sucesso",
+      });
+      setIsDialogOpen(false);
+      fetchStudents();
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao excluir aluno",
+      });
+    } finally {
+      setIsDeletingStudent(false);
+    }
   };
 
   const handleUpdateStudent = async () => {
@@ -517,6 +564,68 @@ export default function Students() {
                     )}
                     <span>{isUploadingDiet ? "Enviando..." : "Escolher arquivo PDF"}</span>
                   </Label>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              {!showDeleteConfirm ? (
+                <Button
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full justify-start"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir aluno
+                </Button>
+              ) : (
+                <div className="border border-destructive/50 rounded-lg p-4 space-y-3 bg-destructive/5">
+                  <div className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="text-sm font-semibold">Ação irreversível</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Digite <strong>{editingStudent?.profile?.full_name?.split(" ")[0]}</strong> para confirmar a exclusão:
+                  </p>
+                  <Input
+                    placeholder="Digite o primeiro nome"
+                    value={deleteNameInput}
+                    onChange={(e) => {
+                      setDeleteNameInput(e.target.value);
+                      setDeleteNameError("");
+                    }}
+                  />
+                  {deleteNameError && (
+                    <p className="text-sm text-destructive">{deleteNameError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setDeleteNameInput("");
+                        setDeleteNameError("");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteStudent}
+                      disabled={isDeletingStudent}
+                    >
+                      {isDeletingStudent ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-1" />
+                      )}
+                      Confirmar exclusão
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
