@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import {
   Play,
   Wind,
   BookOpen,
+  HelpCircle,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import VideoPlayerModal from "@/components/VideoPlayerModal";
@@ -50,6 +52,8 @@ export default function MyWorkouts() {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
   const [selectedExerciseName, setSelectedExerciseName] = useState<string>("");
+  const [showTechniqueHelp, setShowTechniqueHelp] = useState<string | null>(null);
+  const techniqueHelpRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -332,7 +336,39 @@ export default function MyWorkouts() {
                         <th className="w-16">Vídeo</th>
                         <th className="w-20">Séries</th>
                         <th className="w-24">Reps</th>
-                        <th className="w-24">Técnica</th>
+                        <th className="w-24 relative">
+                          <span className="inline-flex items-center gap-1">
+                            Técnica
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowTechniqueHelp(showTechniqueHelp === workout.id ? null : workout.id);
+                              }}
+                              className="text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <HelpCircle className="w-3.5 h-3.5" />
+                            </button>
+                          </span>
+                          {showTechniqueHelp === workout.id && (
+                            <div
+                              ref={techniqueHelpRef}
+                              className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-1 w-64 rounded-md border bg-popover p-3 text-popover-foreground shadow-md text-xs font-normal text-left"
+                            >
+                              <div className="flex justify-between items-start gap-2">
+                                <p>Acesse o <strong>Guia de treino</strong> (barra lateral) e compreenda como aplicar a técnica indicada por RIR.</p>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowTechniqueHelp(null);
+                                  }}
+                                  className="text-muted-foreground hover:text-foreground shrink-0"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </th>
                         <th className="w-24">Descanso (s)</th>
                         <th>Obs</th>
                       </tr>
