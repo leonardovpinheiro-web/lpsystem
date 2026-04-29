@@ -10,12 +10,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "@/hooks/use-debounce";
 import {
   ArrowLeft,
   Plus,
   Trash2,
+  Copy,
   GripVertical,
   ChevronDown,
   ChevronUp,
@@ -44,6 +55,8 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
   const [programName, setProgramName] = useState("");
   const [aerobicInfo, setAerobicInfo] = useState("");
   const [draggedWorkoutId, setDraggedWorkoutId] = useState<string | null>(null);
+  const [duplicatingWorkout, setDuplicatingWorkout] = useState<Workout | null>(null);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const { toast } = useToast();
   
   // Store refs to ExerciseTable components for flushing
@@ -167,6 +180,76 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
         description: "Treino excluído",
       });
       fetchWorkouts();
+    }
+  };
+
+  const handleDuplicateWorkout = async () => {
+    if (!duplicatingWorkout) return;
+    setIsDuplicating(true);
+
+    try {
+      // Flush pending edits if duplicating the currently expanded workout
+      if (expandedWorkout === duplicatingWorkout.id) {
+        const tableRef = exerciseTableRefs.current.get(duplicatingWorkout.id);
+        if (tableRef) await tableRef.flushPendingSaves();
+        flushWorkoutName();
+      }
+
+      const maxOrder = workouts.length > 0
+        ? Math.max(...workouts.map(w => w.order_index))
+        : -1;
+
+      // Create new workout
+      const { data: newWorkout, error: workoutError } = await supabase
+        .from("workouts")
+        .insert({
+          program_id: programId,
+          name: `${duplicatingWorkout.name} (cópia)`,
+          order_index: maxOrder + 1,
+        })
+        .select()
+        .single();
+
+      if (workoutError || !newWorkout) throw workoutError;
+
+      // Fetch source exercises
+      const { data: srcExercises, error: exErr } = await supabase
+        .from("exercises")
+        .select("*")
+        .eq("workout_id", duplicatingWorkout.id)
+        .order("order_index", { ascending: true });
+
+      if (exErr) throw exErr;
+
+      if (srcExercises && srcExercises.length > 0) {
+        const toInsert = srcExercises.map((ex) => ({
+          workout_id: newWorkout.id,
+          name: ex.name,
+          sets: ex.sets,
+          reps: ex.reps,
+          technique: ex.technique,
+          rest_seconds: ex.rest_seconds,
+          notes: ex.notes,
+          video_url: ex.video_url,
+          order_index: ex.order_index,
+        }));
+        const { error: insErr } = await supabase.from("exercises").insert(toInsert);
+        if (insErr) throw insErr;
+      }
+
+      toast({ title: "Sucesso", description: "Treino duplicado com sucesso" });
+      setDuplicatingWorkout(null);
+      await fetchWorkouts();
+      setExpandedWorkout(newWorkout.id);
+    } catch (err) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao duplicar treino",
+      });
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -360,6 +443,18 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
                   <Button
                     variant="ghost"
                     size="icon"
+                    title="Duplicar treino"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDuplicatingWorkout(workout);
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Excluir treino"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteWorkout(workout.id);
@@ -427,6 +522,34 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!duplicatingWorkout}
+        onOpenChange={(open) => !open && !isDuplicating && setDuplicatingWorkout(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicar treino</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja duplicar o treino{" "}
+              <strong>{duplicatingWorkout?.name}</strong>? Uma cópia com todos os
+              exercícios será criada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDuplicating}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDuplicateWorkout();
+              }}
+              disabled={isDuplicating}
+            >
+              {isDuplicating ? "Duplicando..." : "Duplicar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
