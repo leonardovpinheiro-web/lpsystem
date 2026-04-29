@@ -443,6 +443,18 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
                   <Button
                     variant="ghost"
                     size="icon"
+                    title="Duplicar treino"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDuplicatingWorkout(workout);
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Excluir treino"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteWorkout(workout.id);
