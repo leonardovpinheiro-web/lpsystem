@@ -522,6 +522,34 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!duplicatingWorkout}
+        onOpenChange={(open) => !open && !isDuplicating && setDuplicatingWorkout(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicar treino</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja duplicar o treino{" "}
+              <strong>{duplicatingWorkout?.name}</strong>? Uma cópia com todos os
+              exercícios será criada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDuplicating}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDuplicateWorkout();
+              }}
+              disabled={isDuplicating}
+            >
+              {isDuplicating ? "Duplicando..." : "Duplicar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
