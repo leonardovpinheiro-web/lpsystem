@@ -55,6 +55,8 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
   const [programName, setProgramName] = useState("");
   const [aerobicInfo, setAerobicInfo] = useState("");
   const [draggedWorkoutId, setDraggedWorkoutId] = useState<string | null>(null);
+  const [duplicatingWorkout, setDuplicatingWorkout] = useState<Workout | null>(null);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const { toast } = useToast();
   
   // Store refs to ExerciseTable components for flushing
