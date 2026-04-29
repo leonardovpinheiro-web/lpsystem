@@ -183,6 +183,76 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
     }
   };
 
+  const handleDuplicateWorkout = async () => {
+    if (!duplicatingWorkout) return;
+    setIsDuplicating(true);
+
+    try {
+      // Flush pending edits if duplicating the currently expanded workout
+      if (expandedWorkout === duplicatingWorkout.id) {
+        const tableRef = exerciseTableRefs.current.get(duplicatingWorkout.id);
+        if (tableRef) await tableRef.flushPendingSaves();
+        flushWorkoutName();
+      }
+
+      const maxOrder = workouts.length > 0
+        ? Math.max(...workouts.map(w => w.order_index))
+        : -1;
+
+      // Create new workout
+      const { data: newWorkout, error: workoutError } = await supabase
+        .from("workouts")
+        .insert({
+          program_id: programId,
+          name: `${duplicatingWorkout.name} (cópia)`,
+          order_index: maxOrder + 1,
+        })
+        .select()
+        .single();
+
+      if (workoutError || !newWorkout) throw workoutError;
+
+      // Fetch source exercises
+      const { data: srcExercises, error: exErr } = await supabase
+        .from("exercises")
+        .select("*")
+        .eq("workout_id", duplicatingWorkout.id)
+        .order("order_index", { ascending: true });
+
+      if (exErr) throw exErr;
+
+      if (srcExercises && srcExercises.length > 0) {
+        const toInsert = srcExercises.map((ex) => ({
+          workout_id: newWorkout.id,
+          name: ex.name,
+          sets: ex.sets,
+          reps: ex.reps,
+          technique: ex.technique,
+          rest_seconds: ex.rest_seconds,
+          notes: ex.notes,
+          video_url: ex.video_url,
+          order_index: ex.order_index,
+        }));
+        const { error: insErr } = await supabase.from("exercises").insert(toInsert);
+        if (insErr) throw insErr;
+      }
+
+      toast({ title: "Sucesso", description: "Treino duplicado com sucesso" });
+      setDuplicatingWorkout(null);
+      await fetchWorkouts();
+      setExpandedWorkout(newWorkout.id);
+    } catch (err) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao duplicar treino",
+      });
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
   // Save workout name to database
   const saveWorkoutName = useCallback(async (workoutId: string, newName: string) => {
     const { error } = await supabase
