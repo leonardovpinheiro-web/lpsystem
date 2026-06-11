@@ -567,6 +567,7 @@ export default function Logbook() {
                           return next;
                         });
                       }}
+                      onDeleteWeek={() => openDeleteDialog(week)}
                       allExercises={allExercises}
                       getEntryForExercise={getEntryForExercise}
                       variant="editable"
