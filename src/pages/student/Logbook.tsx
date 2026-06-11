@@ -5,8 +5,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardList, Plus, Dumbbell, Play } from "lucide-react";
+import { ClipboardList, Plus, Dumbbell, Play, Trash2 } from "lucide-react";
 import LogbookWeekColumn from "@/components/logbook/LogbookWeekColumn";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -69,6 +79,8 @@ export default function Logbook() {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
   const [selectedExerciseName, setSelectedExerciseName] = useState<string>("");
+  const [weekToDelete, setWeekToDelete] = useState<LogbookWeek | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
