@@ -367,6 +367,54 @@ export default function Logbook() {
     updateEntry(entryId, field, value);
   };
 
+  const handleDeleteWeek = async () => {
+    if (!weekToDelete) return;
+
+    try {
+      // Delete entries first, then the week
+      const { error: entriesError } = await supabase
+        .from("logbook_week_entries")
+        .delete()
+        .eq("week_id", weekToDelete.id);
+
+      if (entriesError) throw entriesError;
+
+      const { error: weekError } = await supabase
+        .from("logbook_weeks")
+        .delete()
+        .eq("id", weekToDelete.id);
+
+      if (weekError) throw weekError;
+
+      toast({
+        title: "Semana excluída",
+        description: `Semana ${weekToDelete.week_number} removida com sucesso.`,
+      });
+
+      setWeeks((prev) => prev.filter((w) => w.id !== weekToDelete.id));
+      setCollapsedWeeks((prev) => {
+        const next = new Set(prev);
+        next.delete(weekToDelete.id);
+        return next;
+      });
+    } catch (error) {
+      console.error("Error deleting week:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível excluir a semana.",
+      });
+    } finally {
+      setWeekToDelete(null);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const openDeleteDialog = (week: LogbookWeek) => {
+    setWeekToDelete(week);
+    setDeleteDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
