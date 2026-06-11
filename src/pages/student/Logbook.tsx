@@ -5,8 +5,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardList, Plus, Dumbbell, Play } from "lucide-react";
+import { ClipboardList, Plus, Dumbbell, Play, Trash2 } from "lucide-react";
 import LogbookWeekColumn from "@/components/logbook/LogbookWeekColumn";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -69,6 +79,8 @@ export default function Logbook() {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
   const [selectedExerciseName, setSelectedExerciseName] = useState<string>("");
+  const [weekToDelete, setWeekToDelete] = useState<LogbookWeek | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -355,6 +367,54 @@ export default function Logbook() {
     updateEntry(entryId, field, value);
   };
 
+  const handleDeleteWeek = async () => {
+    if (!weekToDelete) return;
+
+    try {
+      // Delete entries first, then the week
+      const { error: entriesError } = await supabase
+        .from("logbook_week_entries")
+        .delete()
+        .eq("week_id", weekToDelete.id);
+
+      if (entriesError) throw entriesError;
+
+      const { error: weekError } = await supabase
+        .from("logbook_weeks")
+        .delete()
+        .eq("id", weekToDelete.id);
+
+      if (weekError) throw weekError;
+
+      toast({
+        title: "Semana excluída",
+        description: `Semana ${weekToDelete.week_number} removida com sucesso.`,
+      });
+
+      setWeeks((prev) => prev.filter((w) => w.id !== weekToDelete.id));
+      setCollapsedWeeks((prev) => {
+        const next = new Set(prev);
+        next.delete(weekToDelete.id);
+        return next;
+      });
+    } catch (error) {
+      console.error("Error deleting week:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível excluir a semana.",
+      });
+    } finally {
+      setWeekToDelete(null);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const openDeleteDialog = (week: LogbookWeek) => {
+    setWeekToDelete(week);
+    setDeleteDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -507,6 +567,7 @@ export default function Logbook() {
                           return next;
                         });
                       }}
+                      onDeleteWeek={() => openDeleteDialog(week)}
                       allExercises={allExercises}
                       getEntryForExercise={getEntryForExercise}
                       variant="editable"
@@ -520,6 +581,27 @@ export default function Logbook() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir semana {weekToDelete?.week_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Todos os registros de cargas e repetições desta semana serão permanentemente removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setWeekToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteWeek}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <VideoPlayerModal
         open={videoModalOpen}
