@@ -72,7 +72,7 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
       
       const { error } = await supabase
         .from("exercises")
-        .update({ [save.field]: save.value })
+        .update({ [save.field]: save.value } as any)
         .eq("id", save.exerciseId);
       
       if (isMountedRef.current) {
@@ -117,7 +117,7 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
       pendingSaves.forEach(({ save }) => {
         supabase
           .from("exercises")
-          .update({ [save.field]: save.value })
+          .update({ [save.field]: save.value } as any)
           .eq("id", save.exerciseId)
           .then(({ error }) => {
             if (error) console.error("Error saving on unmount:", error);
@@ -188,7 +188,7 @@ const ExerciseTable = forwardRef<ExerciseTableRef, ExerciseTableProps>(({ workou
 
     const { error } = await supabase
       .from("exercises")
-      .update({ [field]: value })
+      .update({ [field]: value } as any)
       .eq("id", exerciseId);
 
     if (isMountedRef.current) {
