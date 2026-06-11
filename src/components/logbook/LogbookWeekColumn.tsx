@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface LogbookEntry {
@@ -38,6 +38,7 @@ interface LogbookWeekColumnProps {
   week: LogbookWeek;
   collapsed: boolean;
   onToggle: () => void;
+  onDeleteWeek?: () => void;
   allExercises: Exercise[];
   getEntryForExercise: (week: LogbookWeek, exerciseId: string) => LogbookEntry | undefined;
   variant: "readonly" | "editable";
@@ -49,6 +50,7 @@ export default function LogbookWeekColumn({
   week,
   collapsed,
   onToggle,
+  onDeleteWeek,
   allExercises,
   getEntryForExercise,
   variant,
@@ -76,11 +78,23 @@ export default function LogbookWeekColumn({
     <div className="flex-shrink-0 min-w-[320px] border-r border-border last:border-r-0">
       {/* Week header */}
       <div
-        className="h-14 flex items-center justify-center gap-2 border-b border-border bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
+        className="h-14 flex items-center justify-center gap-2 border-b border-border bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors relative"
         onClick={onToggle}
       >
         <ChevronLeft className="w-4 h-4 text-muted-foreground" />
         <h3 className="text-lg font-bold">Semana {week.week_number}</h3>
+        {variant === "editable" && onDeleteWeek && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteWeek();
+            }}
+            className="absolute right-2 p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            title="Excluir semana"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Series headers */}
