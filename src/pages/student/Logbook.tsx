@@ -313,7 +313,7 @@ export default function Logbook() {
 
       const { error } = await supabase
         .from("logbook_week_entries")
-        .update({ [field]: numValue })
+        .update({ [field]: numValue } as any)
         .eq("id", entryId);
 
       if (error) {

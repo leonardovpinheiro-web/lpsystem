@@ -346,7 +346,7 @@ export default function ActiveWorkout() {
 
       await supabase
         .from("logbook_week_entries")
-        .update(updateData)
+        .update(updateData as any)
         .eq("week_id", currentWeekId)
         .eq("original_exercise_id", exerciseId);
 
@@ -423,7 +423,7 @@ export default function ActiveWorkout() {
         if (Object.keys(updateData).length > 0) {
           await supabase
             .from("logbook_week_entries")
-            .update(updateData)
+            .update(updateData as any)
             .eq("week_id", currentWeekId)
             .eq("original_exercise_id", exercise.id);
         }
