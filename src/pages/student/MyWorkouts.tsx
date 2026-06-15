@@ -10,7 +10,6 @@ import {
   Clock,
   Play,
   Wind,
-  BookOpen,
   HelpCircle,
   X,
 } from "lucide-react";
