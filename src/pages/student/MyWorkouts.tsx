@@ -12,9 +12,11 @@ import {
   Wind,
   HelpCircle,
   X,
+  Copy,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import VideoPlayerModal from "@/components/VideoPlayerModal";
+import { useToast } from "@/hooks/use-toast";
 
 interface Workout {
   id: string;
@@ -55,6 +57,7 @@ export default function MyWorkouts() {
   const techniqueHelpRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -141,6 +144,34 @@ export default function MyWorkouts() {
     setVideoModalOpen(true);
   };
 
+  const copyWorkouts = async () => {
+    if (!program) return;
+    const blocks = program.workouts.map((w) => {
+      const header = w.name;
+      const lines = w.exercises.map((ex) => {
+        const parts = [ex.name, `${ex.sets}x${ex.reps}`];
+        if (ex.technique && ex.technique.trim()) parts.push(ex.technique.trim());
+        if (ex.rest_seconds && ex.rest_seconds.toString().trim()) {
+          const rest = ex.rest_seconds.toString().trim();
+          parts.push(/s\s*$/i.test(rest) ? rest : `${rest}s`);
+        }
+        return parts.join(" ");
+      });
+      return [header, ...lines.flatMap((l, i) => (i === 0 ? [l] : ["", l]))].join("\n");
+    });
+    const text = blocks.join("\n\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Treinos copiados!", description: "Cole onde desejar." });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível copiar.",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -185,9 +216,15 @@ export default function MyWorkouts() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Meus Treinos</h1>
-        <p className="text-muted-foreground">{program.name}</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">Meus Treinos</h1>
+          <p className="text-muted-foreground">{program.name}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={copyWorkouts}>
+          <Copy className="w-4 h-4 mr-2" />
+          Copiar treino
+        </Button>
       </div>
 
       {program.aerobic_info && (

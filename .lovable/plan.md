@@ -1,46 +1,40 @@
+## Adicionar botão "Copiar treino" em Meus Treinos
 
-
-## Semanas Colapsaveis no Logbook
-
-### O que muda
-
-Cada coluna de semana no logbook podera ser minimizada/expandida clicando no cabecalho. O estado persiste enquanto o usuario navega (nao reseta ao scrollar ou interagir com outros elementos). Um novo componente dedicado `LogbookWeekColumn` encapsula toda a logica de colapso.
+### Onde
+`src/pages/student/MyWorkouts.tsx` — no header da página, ao lado do título "Meus Treinos".
 
 ### Comportamento
+- Botão `Copiar treino` (ícone `Copy` do lucide-react) visível só quando há programa carregado.
+- Ao clicar: gera o texto formatado de todos os treinos do programa ativo, copia para o clipboard via `navigator.clipboard.writeText`, e exibe um toast "Treinos copiados!" (usar `useToast` já presente no projeto).
+- Em caso de falha, toast destrutivo.
 
-- Clique no cabecalho da semana alterna entre expandido e minimizado
-- Minimizada: coluna estreita (~48px) mostrando apenas "S{numero}" na vertical e um icone de seta
-- Expandida: layout atual completo com 4 series e dados
-- Todas as semanas iniciam expandidas por padrao
-- O estado e independente por semana (multiplas podem estar em qualquer estado)
+### Formato gerado
+Para cada workout, na ordem:
 
-### Detalhes Tecnicos
+```
+<Nome do treino>
+<Exercício> <sets>x<reps> [técnica] [descanso]s
 
-**Novo componente: `src/components/logbook/LogbookWeekColumn.tsx`**
+<Exercício> <sets>x<reps> [técnica] [descanso]s
+```
 
-Componente reutilizavel que recebe:
-- `week` (dados da semana)
-- `collapsed` (boolean)
-- `onToggle` (callback)
-- `allExercises` (lista de exercicios)
-- `getEntryForExercise` (funcao auxiliar)
-- Variante `readonly` (admin) vs `editable` (student) via prop
+Regras:
+- Linha em branco entre cada exercício.
+- Campos vazios (técnica, descanso) **omitidos** — sem traço.
+- Descanso renderizado como `<valor>s` (ex: `60s`); se já contiver "s", usar como está.
+- Entre treinos diferentes: **duas linhas em branco**.
 
-Quando `collapsed=true`:
-- Renderiza coluna com `w-12` e texto "S{numero}" rotacionado verticalmente
-- Icone `ChevronRight` indicando que pode expandir
+### Exemplo de saída
+```
+Peito/ombro
+Supino inclinado 3x12-15 0RIR 60s
 
-Quando `collapsed=false`:
-- Renderiza o conteudo atual completo (header, sub-headers de series, linhas de exercicio)
-- Icone `ChevronLeft` no cabecalho para minimizar
+Tríceps francês 3x12-15 0RIR 60s
 
-**Alteracoes em `src/pages/admin/StudentLogbook.tsx`:**
-- Adicionar estado `collapsedWeeks: Set<string>` e funcao `toggleWeek`
-- Substituir o bloco inline de renderizacao de cada semana pelo componente `LogbookWeekColumn`
 
-**Alteracoes em `src/pages/student/Logbook.tsx`:**
-- Mesma logica de estado `collapsedWeeks` e `toggleWeek`
-- Usar o mesmo componente `LogbookWeekColumn` com a variante editavel (inputs ao inves de texto)
+Costas
+Puxada 4x10 60s
+```
 
-Nenhuma alteracao no banco de dados e necessaria.
-
+### Layout do header
+Alterar o `<div>` do título para um flex (`flex items-start justify-between gap-3`) com o título à esquerda e o botão à direita. Em mobile empilha (`flex-col sm:flex-row`).
