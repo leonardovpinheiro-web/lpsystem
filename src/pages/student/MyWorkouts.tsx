@@ -216,9 +216,15 @@ export default function MyWorkouts() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Meus Treinos</h1>
-        <p className="text-muted-foreground">{program.name}</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">Meus Treinos</h1>
+          <p className="text-muted-foreground">{program.name}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={copyWorkouts}>
+          <Copy className="w-4 h-4 mr-2" />
+          Copiar treino
+        </Button>
       </div>
 
       {program.aerobic_info && (
