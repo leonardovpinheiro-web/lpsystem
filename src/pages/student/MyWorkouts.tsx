@@ -10,7 +10,6 @@ import {
   Clock,
   Play,
   Wind,
-  BookOpen,
   HelpCircle,
   X,
 } from "lucide-react";
@@ -191,26 +190,6 @@ export default function MyWorkouts() {
         <p className="text-muted-foreground">{program.name}</p>
       </div>
 
-      {/* Methodology Info Card */}
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center shrink-0">
-              <BookOpen className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Confira a <strong>metodologia de treino</strong> acessando a seção <strong>Plataforma</strong> na barra lateral. Vídeos de 3-5 minutos sobre como extrair o máximo do seu treino.
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Na seção <strong>Guia de treino</strong> você encontra as principais informações resumidas.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Aerobic Info Card - Read Only */}
       {program.aerobic_info && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-4">
