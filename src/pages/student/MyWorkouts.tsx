@@ -12,9 +12,11 @@ import {
   Wind,
   HelpCircle,
   X,
+  Copy,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import VideoPlayerModal from "@/components/VideoPlayerModal";
+import { useToast } from "@/hooks/use-toast";
 
 interface Workout {
   id: string;
