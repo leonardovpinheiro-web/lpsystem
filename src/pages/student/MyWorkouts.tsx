@@ -144,6 +144,34 @@ export default function MyWorkouts() {
     setVideoModalOpen(true);
   };
 
+  const copyWorkouts = async () => {
+    if (!program) return;
+    const blocks = program.workouts.map((w) => {
+      const header = w.name;
+      const lines = w.exercises.map((ex) => {
+        const parts = [ex.name, `${ex.sets}x${ex.reps}`];
+        if (ex.technique && ex.technique.trim()) parts.push(ex.technique.trim());
+        if (ex.rest_seconds && ex.rest_seconds.toString().trim()) {
+          const rest = ex.rest_seconds.toString().trim();
+          parts.push(/s\s*$/i.test(rest) ? rest : `${rest}s`);
+        }
+        return parts.join(" ");
+      });
+      return [header, ...lines.flatMap((l, i) => (i === 0 ? [l] : ["", l]))].join("\n");
+    });
+    const text = blocks.join("\n\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Treinos copiados!", description: "Cole onde desejar." });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível copiar.",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
