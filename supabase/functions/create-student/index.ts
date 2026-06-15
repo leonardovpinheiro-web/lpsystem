@@ -95,6 +95,7 @@ serve(async (req) => {
     }
 
     // Send welcome email with credentials via Resend
+    const appUrl = "https://lpsystem.lovable.app/auth";
     try {
       const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
       await resend.emails.send({
@@ -109,6 +110,9 @@ serve(async (req) => {
               <p style="margin: 4px 0;"><strong>Email:</strong> ${email}</p>
               <p style="margin: 4px 0;"><strong>Senha:</strong> ${password}</p>
             </div>
+            <p>Acesse o sistema pelo link abaixo:</p>
+            <a href="${appUrl}" style="display: inline-block; background: #3B82F6; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 8px 0;">Acessar Sistema LP</a>
+            <p style="margin-top: 12px; word-break: break-all; color: #555; font-size: 14px;">${appUrl}</p>
             <p>Recomendamos que você altere sua senha após o primeiro acesso.</p>
             <p style="color: #666; font-size: 14px;">Este é um email automático, por favor não responda.</p>
           </div>
