@@ -57,6 +57,7 @@ export default function MyWorkouts() {
   const techniqueHelpRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
