@@ -14,6 +14,7 @@ import {
   Library,
   GraduationCap,
   Apple,
+  PlayCircle,
 } from "lucide-react";
 import lpLogo from "@/assets/lp-logo.png";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export default function Sidebar() {
     { href: "/students", label: "Alunos", icon: Users },
     { href: "/library", label: "Biblioteca", icon: Library },
     { href: "/guides", label: "Guia de treino", icon: BookOpen },
+    { href: "/admin/metodologia", label: "Metodologia", icon: PlayCircle },
   ];
 
   const studentLinks = [
@@ -41,6 +43,7 @@ export default function Sidebar() {
     { href: "/logbook", label: "Logbook", icon: ClipboardList },
     { href: "/diet", label: "Dieta", icon: Apple },
     { href: "/guides", label: "Guia de treino", icon: BookOpen },
+    { href: "/metodologia", label: "Metodologia", icon: PlayCircle },
     { href: "/platform", label: "Plataforma", icon: GraduationCap },
   ];
 
