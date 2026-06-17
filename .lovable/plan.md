@@ -1,51 +1,50 @@
-## Adicionar seção "Metodologia" ao Sistema LP
 
-Nova seção com player de YouTube + lista de aulas + tracking de progresso por aluno, reaproveitando auth/layout existentes. Não toca em nada do que já roda.
+# Onboarding obrigatório via Metodologia
 
-### 1. Nova tabela `video_progress`
+Novo aluno só acessa as outras áreas do sistema depois de assistir pelo menos 75% de cada vídeo da Metodologia. Uma vez liberado, fica liberado para sempre.
 
-Migração no Lovable Cloud com:
-- `user_id` (ref `auth.users`), `lesson_id` (text), `max_percent` (0-100), `started_at`, `completed_at`, `updated_at`
-- UNIQUE(user_id, lesson_id)
-- GRANTs para `authenticated` e `service_role`
-- RLS: aluno gerencia o próprio progresso; admin lê todos (via `has_role(auth.uid(),'admin')`)
-- Trigger `update_updated_at_column` em UPDATE
+## Comportamento
 
-### 2. Arquivos copiados do projeto Metodologia (cross_project)
+- Login do aluno → vai direto para `/metodologia`.
+- Enquanto bloqueado:
+  - Menu lateral mostra apenas **Metodologia** e **Sair**.
+  - Qualquer URL diferente de `/metodologia` redireciona para `/metodologia`.
+  - Aparece um aviso no topo da página de Metodologia: "Assista pelo menos 75% de cada aula para liberar o restante da plataforma" + barra de progresso (X de Y aulas concluídas).
+- Quando o aluno atinge 75% na última aula pendente:
+  - Sistema marca `onboarding_completed_at` no perfil (permanente).
+  - Aviso vira mensagem de sucesso ("Plataforma liberada!") com botão para ir aos treinos.
+  - Menu volta ao normal no próximo render.
+- Admin nunca é afetado (continua entrando no Dashboard).
+- Alunos antigos que já tinham acesso: rodamos um backfill marcando todos os alunos existentes como já liberados, para não bloquear quem já estava usando.
 
-```text
-src/data/lessons.ts                     (lista de aulas + IDs YouTube)
-src/components/VideoPlayer.tsx          (YT IFrame API + tracking)
-src/components/LessonList.tsx           (lista lateral c/ check/play)
-src/hooks/useVideoProgress.ts           (sync com video_progress)
-```
+## Detalhes técnicos
 
-Antes de colar, ler cada arquivo do projeto origem e verificar imports — manter `@/integrations/supabase/client` e `@/contexts/AuthContext` como estão (compatíveis).
+1. **Migração**
+   - Adicionar coluna `onboarding_completed_at TIMESTAMPTZ NULL` em `public.profiles`.
+   - Backfill: `UPDATE profiles SET onboarding_completed_at = now() WHERE onboarding_completed_at IS NULL` (todos os perfis atuais já estão liberados).
+   - Sem mudança em RLS — a coluna é lida via o select que o cliente já faz no profile.
 
-### 3. Novas páginas
+2. **AuthContext (`src/contexts/AuthContext.tsx`)**
+   - Ao carregar o perfil, expor `onboardingCompleted: boolean` (derivado de `onboarding_completed_at != null`).
+   - Função `markOnboardingComplete()` que faz `update profiles set onboarding_completed_at = now()` para o `user.id` e atualiza estado local.
 
-- `src/pages/student/Metodologia.tsx` — clone do `Index.tsx` do projeto origem, **sem header próprio** (Layout do Sistema LP já fornece sidebar/header). Renderiza `VideoPlayer` + `LessonList` lado a lado (mobile: empilha).
-- `src/pages/admin/MetodologiaProgress.tsx` — clone do `Admin.tsx` do projeto origem. Lista alunos × aulas com % assistido. Select de `profiles` usa colunas existentes (`email`, `full_name`) — já presentes neste projeto.
+3. **Hook `useUserProgress`** já tem `progress`. Adicionar derivado `allLessonsWatched` = `lessons.every(l => (progress[l.id]?.max_percent ?? 0) >= 75)`.
 
-### 4. Rotas em `src/App.tsx`
+4. **Página `Metodologia.tsx`**
+   - Se `!isAdmin && !onboardingCompleted`: mostrar banner com contagem `X / Y aulas (≥75%)` e barra de progresso.
+   - `useEffect`: quando `allLessonsWatched && !onboardingCompleted`, chamar `markOnboardingComplete()` e mostrar toast/banner de sucesso com CTA "Ir para meus treinos".
+   - Limite de 75% (não 90%) — desacoplado do critério "completed" do tracking.
 
-Dentro de `<AppRoutes>`:
-- `/metodologia` → `!isAdmin ? <Metodologia /> : <Navigate to="/" />`
-- `/admin/metodologia` → `isAdmin ? <MetodologiaProgress /> : <Navigate to="/" />`
+5. **Gate de rotas (`src/App.tsx`)**
+   - Novo wrapper `OnboardingGate` dentro de `ProtectedRoute` para alunos:
+     - Se `!isAdmin && !onboardingCompleted` e `location.pathname !== '/metodologia'` → `<Navigate to="/metodologia" replace />`.
+   - Aplicado em todas as rotas de aluno (`/`, `/logbook`, `/diet`, `/workout/:id`, `/guides`, `/platform`, `/platform/course/:id`).
 
-### 5. Link no menu (`src/components/layout/Sidebar.tsx`)
+6. **Sidebar (`src/components/layout/Sidebar.tsx`)**
+   - Quando `!isAdmin && !onboardingCompleted`, `studentLinks` vira apenas `[{ Metodologia }]`. Resto do menu fica oculto. Botão Sair permanece (já está fora da lista).
 
-- Em `studentLinks`: adicionar `{ href: "/metodologia", label: "Metodologia", icon: PlayCircle }`
-- Em `adminLinks`: adicionar `{ href: "/admin/metodologia", label: "Metodologia", icon: PlayCircle }`
+## Fora de escopo
 
-### O que NÃO muda
-
-- Nenhuma tabela existente é alterada.
-- Auth, perfis, roles, sidebar atual continuam intactos — só ganham um item de menu novo.
-- Projeto origem (Metodologia) continua funcionando.
-
-### Pontos de atenção técnica
-
-- Conferir após cópia que `useVideoProgress` referencia `video_progress` (não outro nome).
-- O `Metodologia.tsx` deve remover qualquer logout/header próprio do `Index.tsx` original.
-- Se `lessons.ts` exportar tipos, manter o `import type` igual no resto dos arquivos.
+- Não alteramos a lógica de tracking existente (continua salvando `max_percent` normalmente; só adicionamos uma leitura derivada).
+- Não tocamos admin nem rotas `/admin/*`.
+- Sem novas tabelas, edge functions ou e-mails.

@@ -22,7 +22,7 @@ import { useState } from "react";
 
 export default function Sidebar() {
   const location = useLocation();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, onboardingCompleted } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -47,7 +47,9 @@ export default function Sidebar() {
     { href: "/platform", label: "Plataforma", icon: GraduationCap },
   ];
 
-  const links = isAdmin ? adminLinks : studentLinks;
+  const links = isAdmin
+    ? adminLinks
+    : (onboardingCompleted ? studentLinks : studentLinks.filter((l) => l.href === "/metodologia"));
 
   const NavContent = () => (
     <>

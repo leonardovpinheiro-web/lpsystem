@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 // Pages
@@ -49,7 +49,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  return <Layout>{children}</Layout>;
+  return <Layout><StudentGate>{children}</StudentGate></Layout>;
+}
+
+function StudentGate({ children }: { children: React.ReactNode }) {
+  const { isAdmin, onboardingCompleted } = useAuth();
+  const location = useLocation();
+  if (!isAdmin && !onboardingCompleted && location.pathname !== "/metodologia") {
+    return <Navigate to="/metodologia" replace />;
+  }
+  return <>{children}</>;
 }
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
