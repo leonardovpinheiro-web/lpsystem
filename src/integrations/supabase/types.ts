@@ -639,6 +639,36 @@ export type Database = {
         }
         Relationships: []
       }
+      video_progress: {
+        Row: {
+          completed_at: string | null
+          id: string
+          lesson_id: string
+          max_percent: number
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          lesson_id: string
+          max_percent?: number
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          lesson_id?: string
+          max_percent?: number
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workouts: {
         Row: {
           created_at: string
