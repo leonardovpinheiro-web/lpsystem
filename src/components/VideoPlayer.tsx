@@ -35,6 +35,8 @@ export function VideoPlayer({ lesson, onProgress }: VideoPlayerProps) {
   const playerRef = useRef<any>(null);
   const intervalRef = useRef<number | null>(null);
   const lastSentRef = useRef<number>(0);
+  const onProgressRef = useRef(onProgress);
+  useEffect(() => { onProgressRef.current = onProgress; }, [onProgress]);
 
   useEffect(() => {
     let cancelled = false;
