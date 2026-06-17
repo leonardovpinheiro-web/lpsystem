@@ -35,6 +35,8 @@ export function VideoPlayer({ lesson, onProgress }: VideoPlayerProps) {
   const playerRef = useRef<any>(null);
   const intervalRef = useRef<number | null>(null);
   const lastSentRef = useRef<number>(0);
+  const onProgressRef = useRef(onProgress);
+  useEffect(() => { onProgressRef.current = onProgress; }, [onProgress]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +81,7 @@ export function VideoPlayer({ lesson, onProgress }: VideoPlayerProps) {
         const pct = override ?? (current / duration) * 100;
         if (pct > lastSentRef.current) {
           lastSentRef.current = pct;
-          onProgress?.(lesson.id, pct);
+          onProgressRef.current?.(lesson.id, pct);
         }
       } catch {}
     };
@@ -94,7 +96,7 @@ export function VideoPlayer({ lesson, onProgress }: VideoPlayerProps) {
         playerRef.current = null;
       }
     };
-  }, [lesson.id, lesson.videoId, onProgress]);
+  }, [lesson.id, lesson.videoId]);
 
   return (
     <div className="flex flex-col gap-4">
