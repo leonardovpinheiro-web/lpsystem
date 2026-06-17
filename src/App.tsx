@@ -49,7 +49,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  return <Layout>{children}</Layout>;
+  return <Layout><StudentGate>{children}</StudentGate></Layout>;
 }
 
 function StudentGate({ children }: { children: React.ReactNode }) {
