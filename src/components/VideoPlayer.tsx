@@ -81,7 +81,7 @@ export function VideoPlayer({ lesson, onProgress }: VideoPlayerProps) {
         const pct = override ?? (current / duration) * 100;
         if (pct > lastSentRef.current) {
           lastSentRef.current = pct;
-          onProgress?.(lesson.id, pct);
+          onProgressRef.current?.(lesson.id, pct);
         }
       } catch {}
     };
