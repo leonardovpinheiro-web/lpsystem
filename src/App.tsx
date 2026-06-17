@@ -26,6 +26,8 @@ import GuidesStudent from "./pages/student/Guides";
 import Platform from "./pages/student/Platform";
 import CourseViewer from "./pages/student/CourseViewer";
 import Diet from "./pages/student/Diet";
+import Metodologia from "./pages/student/Metodologia";
+import MetodologiaProgress from "./pages/admin/MetodologiaProgress";
 
 // Layout
 import Layout from "./components/layout/Layout";
@@ -188,6 +190,26 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Metodologia */}
+      <Route
+        path="/metodologia"
+        element={
+          <ProtectedRoute>
+            {!isAdmin ? <Metodologia /> : <Navigate to="/" replace />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/metodologia"
+        element={
+          <ProtectedRoute>
+            {isAdmin ? <MetodologiaProgress /> : <Navigate to="/" replace />}
+          </ProtectedRoute>
+        }
+      />
+
+
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
