@@ -96,7 +96,7 @@ export function VideoPlayer({ lesson, onProgress }: VideoPlayerProps) {
         playerRef.current = null;
       }
     };
-  }, [lesson.id, lesson.videoId, onProgress]);
+  }, [lesson.id, lesson.videoId]);
 
   return (
     <div className="flex flex-col gap-4">
