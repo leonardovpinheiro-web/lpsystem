@@ -163,12 +163,36 @@ export default function MetodologiaProgress() {
             <h2 className="text-lg font-semibold">Alunos</h2>
             <p className="text-sm text-muted-foreground">{filtered.length} aluno(s)</p>
           </div>
-          <Input
-            placeholder="Buscar por email ou nome..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="sm:max-w-xs"
-          />
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <Input
+              placeholder="Buscar por email ou nome..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="sm:max-w-xs"
+            />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as any)}
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="all">Todos os status</option>
+              <option value="not-started">Não iniciado</option>
+              <option value="in-progress">Em andamento</option>
+              <option value="completed">Concluído</option>
+              <option value="unlocked">Liberado</option>
+              <option value="not-unlocked">Não liberado</option>
+            </select>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="progress-asc">Menor progresso</option>
+              <option value="progress-desc">Maior progresso</option>
+              <option value="name-asc">Nome (A-Z)</option>
+              <option value="name-desc">Nome (Z-A)</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
