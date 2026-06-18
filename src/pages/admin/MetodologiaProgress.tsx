@@ -29,6 +29,8 @@ export default function MetodologiaProgress() {
   const [progress, setProgress] = useState<ProgressRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [unlockingId, setUnlockingId] = useState<string | null>(null);
+  const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const load = async () => {
