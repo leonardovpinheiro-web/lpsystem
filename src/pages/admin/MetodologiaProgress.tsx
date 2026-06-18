@@ -36,7 +36,7 @@ export default function MetodologiaProgress() {
     const load = async () => {
       const [{ data: activeStudents }, { data: ps }, { data: pr }] = await Promise.all([
         supabase.from("students").select("user_id").eq("status", "active"),
-        supabase.from("profiles").select("user_id, email, full_name, onboarding_completed_at" as any).order("created_at", { ascending: false }),
+        (supabase.from("profiles") as any).select("user_id, email, full_name, onboarding_completed_at").order("created_at", { ascending: false }),
         supabase.from("video_progress").select("user_id, lesson_id, max_percent, started_at, completed_at"),
       ]);
       const activeIds = new Set((activeStudents ?? []).map((s: any) => s.user_id));
