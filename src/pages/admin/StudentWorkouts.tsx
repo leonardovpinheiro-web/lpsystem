@@ -454,12 +454,22 @@ export default function StudentWorkouts() {
                     </div>
                     <div>
                       <h3 className="font-semibold">{program.name}</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className={`text-sm ${program.is_active ? "text-primary" : "text-muted-foreground"}`}>
                         {program.is_active ? "Ativo" : "Inativo"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="flex items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Switch
+                        checked={program.is_active}
+                        onCheckedChange={(checked) => handleToggleActive(program, checked)}
+                        aria-label={program.is_active ? "Desativar treino" : "Ativar treino"}
+                      />
+                    </div>
                     {duplicating === program.id && (
                       <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                     )}
