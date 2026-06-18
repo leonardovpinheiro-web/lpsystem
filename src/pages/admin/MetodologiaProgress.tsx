@@ -30,11 +30,13 @@ export default function MetodologiaProgress() {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: ps }, { data: pr }] = await Promise.all([
+      const [{ data: activeStudents }, { data: ps }, { data: pr }] = await Promise.all([
+        supabase.from("students").select("user_id").eq("status", "active"),
         supabase.from("profiles").select("user_id, email, full_name").order("created_at", { ascending: false }),
         supabase.from("video_progress").select("user_id, lesson_id, max_percent, started_at, completed_at"),
       ]);
-      setProfiles((ps ?? []) as Profile[]);
+      const activeIds = new Set((activeStudents ?? []).map((s: any) => s.user_id));
+      setProfiles((ps ?? []).filter((p: any) => activeIds.has(p.user_id)) as Profile[]);
       setProgress((pr ?? []) as ProgressRow[]);
       setLoading(false);
     };
