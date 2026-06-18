@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +68,9 @@ export default function Library() {
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [cloning, setCloning] = useState(false);
   const [studentSearchOpen, setStudentSearchOpen] = useState(false);
+  const [clonedInfo, setClonedInfo] = useState<{ studentId: string; studentName: string } | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPrograms();
@@ -279,6 +282,7 @@ export default function Library() {
     e.stopPropagation();
     setCloneDialog({ open: true, program });
     setSelectedStudent("");
+    setClonedInfo(null);
   };
 
   const handleCloneToStudent = async () => {
@@ -294,6 +298,7 @@ export default function Library() {
           name: cloneDialog.program.name,
           student_id: selectedStudent,
           is_template: false,
+          is_active: false,
         })
         .select()
         .single();
@@ -346,11 +351,12 @@ export default function Library() {
       }
 
       const student = students.find(s => s.id === selectedStudent);
+      const studentName = student?.profile?.full_name || student?.profile?.email || "aluno";
       toast({
         title: "Sucesso",
-        description: `Programa clonado para ${student?.profile?.full_name || "aluno"}`,
+        description: `Programa clonado como inativo para ${studentName}`,
       });
-      setCloneDialog({ open: false, program: null });
+      setClonedInfo({ studentId: selectedStudent, studentName });
     } catch (error) {
       toast({
         variant: "destructive",
