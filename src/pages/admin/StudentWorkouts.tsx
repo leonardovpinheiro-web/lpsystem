@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Dumbbell, ChevronRight, ArrowLeft, MoreVertical, Pencil, Trash2, Copy, Loader2, Library } from "lucide-react";
 import WorkoutEditor from "@/components/admin/WorkoutEditor";
 
