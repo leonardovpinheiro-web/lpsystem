@@ -144,6 +144,7 @@ export default function MetodologiaProgress() {
                   </TableHead>
                 ))}
                 <TableHead>Concluídas</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
