@@ -4,8 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { lessons } from "@/data/lessons";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import { CheckCircle2, Circle, PlayCircle, Unlock, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface Profile {
   user_id: string;
