@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Dumbbell, ChevronRight, ArrowLeft, MoreVertical, Pencil, Trash2, Copy, Loader2, Library } from "lucide-react";
 import WorkoutEditor from "@/components/admin/WorkoutEditor";
 
@@ -350,6 +351,34 @@ export default function StudentWorkouts() {
     }
   };
 
+  const handleToggleActive = async (program: Program, checked: boolean, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    // Optimistic update
+    setPrograms((prev) => prev.map((p) => (p.id === program.id ? { ...p, is_active: checked } : p)));
+
+    const { error } = await supabase
+      .from("training_programs")
+      .update({ is_active: checked })
+      .eq("id", program.id);
+
+    if (error) {
+      // Revert
+      setPrograms((prev) => prev.map((p) => (p.id === program.id ? { ...p, is_active: !checked } : p)));
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o status do treino",
+      });
+    } else {
+      toast({
+        title: checked ? "Treino ativado" : "Treino desativado",
+        description: checked
+          ? "O aluno já pode visualizar este treino"
+          : "O treino ficou invisível para o aluno (histórico preservado)",
+      });
+    }
+  };
+
   if (selectedProgram) {
     return (
       <WorkoutEditor
@@ -425,12 +454,22 @@ export default function StudentWorkouts() {
                     </div>
                     <div>
                       <h3 className="font-semibold">{program.name}</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className={`text-sm ${program.is_active ? "text-primary" : "text-muted-foreground"}`}>
                         {program.is_active ? "Ativo" : "Inativo"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="flex items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Switch
+                        checked={program.is_active}
+                        onCheckedChange={(checked) => handleToggleActive(program, checked)}
+                        aria-label={program.is_active ? "Desativar treino" : "Ativar treino"}
+                      />
+                    </div>
                     {duplicating === program.id && (
                       <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                     )}
