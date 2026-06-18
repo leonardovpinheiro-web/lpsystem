@@ -36,16 +36,60 @@ export default function MetodologiaProgress() {
     const load = async () => {
       const [{ data: activeStudents }, { data: ps }, { data: pr }] = await Promise.all([
         supabase.from("students").select("user_id").eq("status", "active"),
-        supabase.from("profiles").select("user_id, email, full_name").order("created_at", { ascending: false }),
+        supabase.from("profiles").select("user_id, email, full_name, onboarding_completed_at" as any).order("created_at", { ascending: false }),
         supabase.from("video_progress").select("user_id, lesson_id, max_percent, started_at, completed_at"),
       ]);
       const activeIds = new Set((activeStudents ?? []).map((s: any) => s.user_id));
-      setProfiles((ps ?? []).filter((p: any) => activeIds.has(p.user_id)) as Profile[]);
+      const activeProfiles = (ps ?? []).filter((p: any) => activeIds.has(p.user_id));
+      setProfiles(activeProfiles as Profile[]);
+      setUnlockedIds(new Set(activeProfiles.filter((p: any) => p.onboarding_completed_at).map((p: any) => p.user_id)));
       setProgress((pr ?? []) as ProgressRow[]);
       setLoading(false);
     };
     load();
   }, []);
+
+  const handleUnlock = async (userId: string) => {
+    setUnlockingId(userId);
+    try {
+      const nowIso = new Date().toISOString();
+      const rows = lessons.map((l) => ({
+        user_id: userId,
+        lesson_id: l.id,
+        max_percent: 100,
+        completed_at: nowIso,
+      }));
+      const { error: vpErr } = await supabase
+        .from("video_progress")
+        .upsert(rows, { onConflict: "user_id,lesson_id" });
+      if (vpErr) throw vpErr;
+
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .update({ onboarding_completed_at: nowIso } as any)
+        .eq("user_id", userId);
+      if (profErr) throw profErr;
+
+      setProgress((prev) => {
+        const others = prev.filter((p) => p.user_id !== userId);
+        const newRows = lessons.map((l) => ({
+          user_id: userId,
+          lesson_id: l.id,
+          max_percent: 100,
+          started_at: nowIso,
+          completed_at: nowIso,
+        }));
+        return [...others, ...newRows];
+      });
+      setUnlockedIds((prev) => new Set(prev).add(userId));
+      toast({ title: "Acesso liberado", description: "Todas as aulas foram marcadas como assistidas." });
+    } catch (e: any) {
+      toast({ title: "Erro ao liberar acesso", description: e.message, variant: "destructive" });
+    } finally {
+      setUnlockingId(null);
+    }
+  };
+
 
   const progressByUser = useMemo(() => {
     const map: Record<string, Record<string, ProgressRow>> = {};
