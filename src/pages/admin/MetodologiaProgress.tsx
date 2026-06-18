@@ -32,6 +32,9 @@ export default function MetodologiaProgress() {
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
   const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
 
+  const [sortBy, setSortBy] = useState<"progress-asc" | "progress-desc" | "name-asc" | "name-desc">("progress-asc");
+  const [filterStatus, setFilterStatus] = useState<"all" | "not-started" | "in-progress" | "completed" | "unlocked" | "not-unlocked">("all");
+
   useEffect(() => {
     const load = async () => {
       const [{ data: activeStudents }, { data: ps }, { data: pr }] = await Promise.all([
