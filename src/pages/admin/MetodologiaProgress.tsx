@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle2, Circle, PlayCircle, Unlock, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, PlayCircle, Unlock, Loader2, ArrowDown, ArrowUp, Filter } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Profile {
@@ -31,6 +31,9 @@ export default function MetodologiaProgress() {
   const [loading, setLoading] = useState(true);
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
   const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
+
+  const [sortBy, setSortBy] = useState<"progress-asc" | "progress-desc" | "name-asc" | "name-desc">("progress-asc");
+  const [filterStatus, setFilterStatus] = useState<"all" | "not-started" | "in-progress" | "completed" | "unlocked" | "not-unlocked">("all");
 
   useEffect(() => {
     const load = async () => {
@@ -102,14 +105,50 @@ export default function MetodologiaProgress() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    const list = profiles.filter((p) => p.user_id !== user?.id);
-    if (!q) return list;
-    return list.filter(
-      (p) =>
-        (p.email ?? "").toLowerCase().includes(q) ||
-        (p.full_name ?? "").toLowerCase().includes(q)
-    );
-  }, [profiles, search, user]);
+    let list = profiles.filter((p) => p.user_id !== user?.id);
+    if (q) {
+      list = list.filter(
+        (p) =>
+          (p.email ?? "").toLowerCase().includes(q) ||
+          (p.full_name ?? "").toLowerCase().includes(q)
+      );
+    }
+
+    if (filterStatus !== "all") {
+      list = list.filter((p) => {
+        const userProg = progressByUser[p.user_id] ?? {};
+        const completed = lessons.filter((l) => (userProg[l.id]?.max_percent ?? 0) >= 90).length;
+        const started = lessons.filter((l) => (userProg[l.id]?.max_percent ?? 0) > 0).length;
+        switch (filterStatus) {
+          case "not-started": return started === 0;
+          case "in-progress": return started > 0 && completed < lessons.length;
+          case "completed": return completed === lessons.length;
+          case "unlocked": return unlockedIds.has(p.user_id);
+          case "not-unlocked": return !unlockedIds.has(p.user_id);
+          default: return true;
+        }
+      });
+    }
+
+    list.sort((a, b) => {
+      const progA = progressByUser[a.user_id] ?? {};
+      const progB = progressByUser[b.user_id] ?? {};
+      const completedA = lessons.filter((l) => (progA[l.id]?.max_percent ?? 0) >= 90).length;
+      const completedB = lessons.filter((l) => (progB[l.id]?.max_percent ?? 0) >= 90).length;
+      const pctA = (completedA / lessons.length) * 100;
+      const pctB = (completedB / lessons.length) * 100;
+
+      switch (sortBy) {
+        case "progress-asc": return pctA - pctB;
+        case "progress-desc": return pctB - pctA;
+        case "name-asc": return (a.full_name || a.email || "").localeCompare(b.full_name || b.email || "");
+        case "name-desc": return (b.full_name || b.email || "").localeCompare(a.full_name || a.email || "");
+        default: return 0;
+      }
+    });
+
+    return list;
+  }, [profiles, search, user, filterStatus, sortBy, progressByUser, unlockedIds]);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -124,12 +163,36 @@ export default function MetodologiaProgress() {
             <h2 className="text-lg font-semibold">Alunos</h2>
             <p className="text-sm text-muted-foreground">{filtered.length} aluno(s)</p>
           </div>
-          <Input
-            placeholder="Buscar por email ou nome..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="sm:max-w-xs"
-          />
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <Input
+              placeholder="Buscar por email ou nome..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="sm:max-w-xs"
+            />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as any)}
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="all">Todos os status</option>
+              <option value="not-started">Não iniciado</option>
+              <option value="in-progress">Em andamento</option>
+              <option value="completed">Concluído</option>
+              <option value="unlocked">Liberado</option>
+              <option value="not-unlocked">Não liberado</option>
+            </select>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="progress-asc">Menor progresso</option>
+              <option value="progress-desc">Maior progresso</option>
+              <option value="name-asc">Nome (A-Z)</option>
+              <option value="name-desc">Nome (Z-A)</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
