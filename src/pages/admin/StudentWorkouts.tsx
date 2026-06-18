@@ -351,6 +351,34 @@ export default function StudentWorkouts() {
     }
   };
 
+  const handleToggleActive = async (program: Program, checked: boolean, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    // Optimistic update
+    setPrograms((prev) => prev.map((p) => (p.id === program.id ? { ...p, is_active: checked } : p)));
+
+    const { error } = await supabase
+      .from("training_programs")
+      .update({ is_active: checked })
+      .eq("id", program.id);
+
+    if (error) {
+      // Revert
+      setPrograms((prev) => prev.map((p) => (p.id === program.id ? { ...p, is_active: !checked } : p)));
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o status do treino",
+      });
+    } else {
+      toast({
+        title: checked ? "Treino ativado" : "Treino desativado",
+        description: checked
+          ? "O aluno já pode visualizar este treino"
+          : "O treino ficou invisível para o aluno (histórico preservado)",
+      });
+    }
+  };
+
   if (selectedProgram) {
     return (
       <WorkoutEditor
