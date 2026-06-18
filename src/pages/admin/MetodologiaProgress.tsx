@@ -149,9 +149,9 @@ export default function MetodologiaProgress() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={lessons.length + 2} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={lessons.length + 3} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={lessons.length + 2} className="text-center text-muted-foreground py-8">Nenhum aluno encontrado.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={lessons.length + 3} className="text-center text-muted-foreground py-8">Nenhum aluno encontrado.</TableCell></TableRow>
               ) : (
                 filtered.map((p) => {
                   const userProg = progressByUser[p.user_id] ?? {};
