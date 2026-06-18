@@ -186,6 +186,27 @@ export default function MetodologiaProgress() {
                         );
                       })}
                       <TableCell className="font-medium">{completed}/{lessons.length}</TableCell>
+                      <TableCell className="text-right">
+                        {unlockedIds.has(p.user_id) ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Liberado
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={unlockingId === p.user_id}
+                            onClick={() => handleUnlock(p.user_id)}
+                          >
+                            {unlockingId === p.user_id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Unlock className="h-4 w-4" />
+                            )}
+                            Liberar
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })
