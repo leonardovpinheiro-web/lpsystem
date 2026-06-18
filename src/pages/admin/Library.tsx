@@ -540,84 +540,116 @@ export default function Library() {
       <Dialog open={cloneDialog.open} onOpenChange={(open) => !open && setCloneDialog({ open: false, program: null })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Clonar Programa para Aluno</DialogTitle>
+            <DialogTitle>
+              {clonedInfo ? "Treino clonado" : "Clonar Programa para Aluno"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Programa: <strong>{cloneDialog.program?.name}</strong>
-            </p>
-            <div className="space-y-2">
-              <Label>Selecione o Aluno</Label>
-              <Popover open={studentSearchOpen} onOpenChange={setStudentSearchOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={studentSearchOpen}
-                    className="w-full justify-between"
-                  >
-                    {selectedStudent
-                      ? students.find((s) => s.id === selectedStudent)?.profile?.full_name || 
-                        students.find((s) => s.id === selectedStudent)?.profile?.email || 
-                        "Aluno selecionado"
-                      : "Buscar aluno..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Digite o nome do aluno..." />
-                    <CommandList>
-                      <CommandEmpty>Nenhum aluno encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {students.map((student) => (
-                          <CommandItem
-                            key={student.id}
-                            value={student.profile?.full_name || student.profile?.email || student.id}
-                            onSelect={() => {
-                              setSelectedStudent(student.id);
-                              setStudentSearchOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedStudent === student.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            <div className="flex flex-col">
-                              <span>{student.profile?.full_name || "Sem nome"}</span>
-                              {student.profile?.email && (
-                                <span className="text-xs text-muted-foreground">{student.profile.email}</span>
-                              )}
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+          {clonedInfo ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                <p className="text-sm">
+                  Treino clonado como <strong>inativo</strong> para{" "}
+                  <strong>{clonedInfo.studentName}</strong>. O aluno não verá o treino
+                  até você ativá-lo. Edite à vontade antes de liberar.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setCloneDialog({ open: false, program: null })}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  onClick={() => {
+                    const studentId = clonedInfo.studentId;
+                    setCloneDialog({ open: false, program: null });
+                    navigate(`/students/${studentId}/workouts`);
+                  }}
+                >
+                  Ir para treinos do aluno
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setCloneDialog({ open: false, program: null })} disabled={cloning}>
-                Cancelar
-              </Button>
-              <Button onClick={handleCloneToStudent} disabled={!selectedStudent || cloning}>
-                {cloning ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Clonando...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Clonar
-                  </>
-                )}
-              </Button>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Programa: <strong>{cloneDialog.program?.name}</strong>
+              </p>
+              <div className="space-y-2">
+                <Label>Selecione o Aluno</Label>
+                <Popover open={studentSearchOpen} onOpenChange={setStudentSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={studentSearchOpen}
+                      className="w-full justify-between"
+                    >
+                      {selectedStudent
+                        ? students.find((s) => s.id === selectedStudent)?.profile?.full_name ||
+                          students.find((s) => s.id === selectedStudent)?.profile?.email ||
+                          "Aluno selecionado"
+                        : "Buscar aluno..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Digite o nome do aluno..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum aluno encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {students.map((student) => (
+                            <CommandItem
+                              key={student.id}
+                              value={student.profile?.full_name || student.profile?.email || student.id}
+                              onSelect={() => {
+                                setSelectedStudent(student.id);
+                                setStudentSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedStudent === student.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{student.profile?.full_name || "Sem nome"}</span>
+                                {student.profile?.email && (
+                                  <span className="text-xs text-muted-foreground">{student.profile.email}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setCloneDialog({ open: false, program: null })} disabled={cloning}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleCloneToStudent} disabled={!selectedStudent || cloning}>
+                  {cloning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Clonando...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Clonar
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
