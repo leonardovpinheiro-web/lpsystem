@@ -31,8 +31,11 @@ import {
   ChevronDown,
   ChevronUp,
   Wind,
+  Eye,
 } from "lucide-react";
 import ExerciseTable, { ExerciseTableRef } from "./ExerciseTable";
+import StudentPreviewModal from "./StudentPreviewModal";
+
 
 interface Workout {
   id: string;
@@ -57,7 +60,9 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
   const [draggedWorkoutId, setDraggedWorkoutId] = useState<string | null>(null);
   const [duplicatingWorkout, setDuplicatingWorkout] = useState<Workout | null>(null);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
+
   
   // Store refs to ExerciseTable components for flushing
   const exerciseTableRefs = useRef<Map<string, ExerciseTableRef>>(new Map());
@@ -379,11 +384,16 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">{programName}</h1>
           <p className="text-muted-foreground">Edite os treinos do programa</p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
+          <Eye className="w-4 h-4 mr-2" />
+          Visualizar como aluno
+        </Button>
       </div>
+
 
       <div className="flex justify-end">
         <Button onClick={() => setShowNewWorkout(true)}>
