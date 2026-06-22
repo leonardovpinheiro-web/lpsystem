@@ -560,6 +560,13 @@ export default function WorkoutEditor({ programId, onBack }: WorkoutEditorProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <StudentPreviewModal
+        programId={programId}
+        open={showPreview}
+        onOpenChange={setShowPreview}
+      />
     </div>
+
   );
 }
