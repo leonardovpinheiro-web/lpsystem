@@ -61,7 +61,9 @@ export default function Demo() {
       } else {
         const sorted: PreviewProgram = {
           id: data.id,
-          name: data.name,
+          name: (data.name as string)
+            .replace(/\s*\(c[oó]pia\)/gi, "")
+            .trim(),
           aerobic_info: data.aerobic_info,
           workouts: ((data.workouts as PreviewWorkout[]) || [])
             .sort((a, b) => a.order_index - b.order_index)
@@ -100,9 +102,6 @@ export default function Demo() {
               </p>
             </div>
           </div>
-          <Button asChild size="sm" variant="outline">
-            <Link to="/auth">Entrar</Link>
-          </Button>
         </div>
       </header>
 
