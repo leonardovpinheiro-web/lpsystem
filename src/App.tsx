@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 // Pages
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Demo from "./pages/Demo";
 
 // Admin Pages
 import Dashboard from "./pages/admin/Dashboard";
@@ -84,6 +85,9 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Public demo */}
+      <Route path="/demo" element={<Demo />} />
+
       {/* Auth */}
       <Route
         path="/auth"
