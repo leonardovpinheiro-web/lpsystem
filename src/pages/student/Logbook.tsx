@@ -606,6 +606,7 @@ export default function Logbook() {
                       variant="editable"
                       onInputChange={handleInputChange}
                       onInputBlur={handleInputBlur}
+                      onToggleComplete={() => toggleWeekComplete(week)}
                     />
                   ))}
                 </div>
