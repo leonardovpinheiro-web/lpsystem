@@ -181,6 +181,32 @@ export default function LogbookWeekColumn({
           </p>
         </div>
       )}
+
+      {/* Save / reopen week */}
+      {variant === "editable" && onToggleComplete && (
+        <div className="p-2 border-t border-border bg-background">
+          {week.completed_at ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={onToggleComplete}
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              Reabrir semana
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={onToggleComplete}
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Salvar semana
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
