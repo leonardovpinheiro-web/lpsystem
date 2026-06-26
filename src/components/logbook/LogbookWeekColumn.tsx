@@ -46,6 +46,7 @@ interface LogbookWeekColumnProps {
   variant: "readonly" | "editable";
   onInputChange?: (entryId: string, field: string, value: string, weekNumber: number) => void;
   onInputBlur?: (entryId: string, field: string, value: string) => void;
+  onToggleComplete?: () => void;
 }
 
 export default function LogbookWeekColumn({
@@ -58,6 +59,7 @@ export default function LogbookWeekColumn({
   variant,
   onInputChange,
   onInputBlur,
+  onToggleComplete,
 }: LogbookWeekColumnProps) {
   if (collapsed) {
     return (
