@@ -444,6 +444,9 @@ export default function Logbook() {
         ? `Semana ${week.week_number} marcada como concluída.`
         : `Semana ${week.week_number} disponível para edição novamente.`,
     });
+  };
+
+
 
   if (loading) {
     return (
