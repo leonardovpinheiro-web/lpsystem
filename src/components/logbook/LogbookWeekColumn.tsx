@@ -1,6 +1,7 @@
 import React from "react";
-import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Check, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface LogbookEntry {
   id: string;

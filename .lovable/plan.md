@@ -1,42 +1,33 @@
-# Página de amostra pública `/demo`
+## Problema
 
-Criar uma página pública (sem login) em `/demo` que renderiza a mesma prévia do treino do modal "Visualizar como aluno", em tela cheia, usando o programa "Mulher enfase em glúteos (Cópia)" como modelo fixo.
+Quando o aluno preenche o logbook manualmente, a linha em `logbook_weeks` fica com `completed_at = null`. Ao clicar em "Iniciar Treino" depois, o `ActiveWorkout.tsx` (linhas 191-283) trata essa semana como "em andamento": carrega os valores nos campos de input em vez de exibi-los no card "Última semana...". Por isso parece que os dados antigos voltaram para os inputs.
 
-## Treino de referência
-- `program_id`: `8b97d96b-c0b7-4afb-94f5-8027ee3428ab`
-- Confirmado no banco (aluno `c32bbabf-83f3-4601-af73-4f3c8492029d`).
-- O ID ficará como constante no arquivo da página — se um dia o programa for trocado, basta atualizar essa constante.
+## Solução
 
-## Backend (acesso público)
-Hoje, `training_programs`, `workouts` e `exercises` são protegidos por RLS e só admin/aluno dono podem ler. Para liberar leitura anônima **apenas deste programa**, criar uma migration que adiciona policies restritas:
+Adicionar um botão **"Salvar semana"** abaixo de cada coluna de semana no logbook do aluno (`src/pages/student/Logbook.tsx`). O botão marca `completed_at = now()` na semana correspondente, sinalizando para o `ActiveWorkout` que aquela semana já está fechada e os valores devem aparecer como referência (não nos campos de edição).
 
-- `training_programs`: `SELECT` para `anon` quando `id = '8b97d96b-...'`.
-- `workouts`: `SELECT` para `anon` quando `program_id = '8b97d96b-...'`.
-- `exercises`: `SELECT` para `anon` quando `workout_id IN (SELECT id FROM workouts WHERE program_id = '8b97d96b-...')`.
-- `GRANT SELECT` em cada uma dessas tabelas para `anon`.
+### Comportamento
 
-As policies existentes para admin/aluno permanecem intactas. Nenhum outro programa, treino ou exercício fica exposto.
+- **Semana aberta** (`completed_at = null`): botão "Salvar semana" (primário) abaixo da coluna.
+- **Semana salva** (`completed_at != null`): botão muda para "Reabrir semana" (outline/ghost), permitindo voltar a editar caso o aluno tenha errado algo. Reabrir define `completed_at = null`.
+- Toast de confirmação em ambos casos.
+- O estado `weeks` recebe o novo `completed_at` para refletir imediatamente sem refetch.
 
-## Frontend
+### Mudanças técnicas
 
-**Novo arquivo** `src/pages/Demo.tsx`
-- Layout em tela cheia com um header simples (logo/título "Sistema LP — amostra de treino", subtítulo curto, CTA opcional "Conhecer a plataforma").
-- Reaproveita os componentes já existentes da prévia:
-  - `ProgramPreview` para a lista de treinos.
-  - `ActiveWorkoutPreview` para a tela de "Iniciar Treino".
-- Estado local `view: "program" | "workout"` + `activeWorkoutId`, idêntico ao `StudentPreviewModal`, mas sem `Dialog` — renderiza direto na página.
-- Fetch do programa via `supabase.from("training_programs").select(... workouts(... exercises(...)))` filtrando pelo `program_id` constante.
-- Estados de loading e erro inline (sem modal).
+1. **`src/components/logbook/LogbookWeekColumn.tsx`**
+   - Adicionar prop opcional `completedAt: string | null` e `onToggleComplete?: () => void` (só usados na variante `editable`).
+   - Renderizar o botão "Salvar semana" / "Reabrir semana" no rodapé da coluna (depois das `notes`), apenas quando `variant === "editable"` e `onToggleComplete` for fornecido. Não afeta a visualização readonly do admin.
 
-**Edição** `src/App.tsx`
-- Adicionar a rota pública `/demo` apontando para `Demo`, fora de qualquer guard de autenticação.
+2. **`src/pages/student/Logbook.tsx`**
+   - Incluir `completed_at` no `select` de `fetchLogbookWeeks` e no tipo `LogbookWeek`.
+   - Nova função `toggleWeekComplete(week)` que faz `update logbook_weeks set completed_at = ...` e atualiza o estado local.
+   - Passar `completedAt` e `onToggleComplete` para `<LogbookWeekColumn>`.
 
-## Comportamento
-- Totalmente read-only, igual ao modal atual: inputs desabilitados, histórico mostra `—`, sem "Finalizar Treino" funcional.
-- Funciona com usuário deslogado.
-- URL final: `https://lpsystem.lovable.app/demo`.
+3. **Sem mudanças** em `ActiveWorkout.tsx`, na lógica de RLS, no admin readonly ou no schema do banco — a coluna `completed_at` já existe e já é a fonte de verdade.
 
-## Fora do escopo
-- Não há tracking/analytics de visitas.
-- Não há captura de leads no próprio /demo (pode ser adicionada depois).
-- Não altera o modal existente no editor admin.
+### Fora de escopo
+
+- Não alterar o auto-save por blur (continua salvando célula a célula).
+- Não alterar o fluxo de "Iniciar Treino" / "Finalizar Treino" no `ActiveWorkout`.
+- Não tocar na visualização readonly do admin (`StudentLogbook.tsx`).
