@@ -170,6 +170,7 @@ export default function Logbook() {
         week_number,
         workout_id,
         notes,
+        completed_at,
         workout:workouts(name),
         entries:logbook_week_entries(
           id,
