@@ -28,12 +28,6 @@ interface LogbookWeek {
   workout: { name: string };
   entries: LogbookEntry[];
 }
-  week_number: number;
-  workout_id: string;
-  notes?: string | null;
-  workout: { name: string };
-  entries: LogbookEntry[];
-}
 
 interface Exercise {
   id: string;
