@@ -1,6 +1,7 @@
 import React from "react";
-import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Check, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface LogbookEntry {
   id: string;
@@ -23,6 +24,7 @@ interface LogbookWeek {
   week_number: number;
   workout_id: string;
   notes?: string | null;
+  completed_at?: string | null;
   workout: { name: string };
   entries: LogbookEntry[];
 }
@@ -44,6 +46,7 @@ interface LogbookWeekColumnProps {
   variant: "readonly" | "editable";
   onInputChange?: (entryId: string, field: string, value: string, weekNumber: number) => void;
   onInputBlur?: (entryId: string, field: string, value: string) => void;
+  onToggleComplete?: () => void;
 }
 
 export default function LogbookWeekColumn({
@@ -56,6 +59,7 @@ export default function LogbookWeekColumn({
   variant,
   onInputChange,
   onInputBlur,
+  onToggleComplete,
 }: LogbookWeekColumnProps) {
   if (collapsed) {
     return (
@@ -175,6 +179,32 @@ export default function LogbookWeekColumn({
           <p className="text-xs text-muted-foreground">
             <span className="font-medium">Comentário:</span> {week.notes}
           </p>
+        </div>
+      )}
+
+      {/* Save / reopen week */}
+      {variant === "editable" && onToggleComplete && (
+        <div className="p-2 border-t border-border bg-background">
+          {week.completed_at ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={onToggleComplete}
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              Reabrir semana
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={onToggleComplete}
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Salvar semana
+            </Button>
+          )}
         </div>
       )}
     </div>
