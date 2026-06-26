@@ -417,6 +417,34 @@ export default function Logbook() {
     setDeleteDialogOpen(true);
   };
 
+  const toggleWeekComplete = async (week: LogbookWeek) => {
+    const newCompletedAt = week.completed_at ? null : new Date().toISOString();
+    const { error } = await supabase
+      .from("logbook_weeks")
+      .update({ completed_at: newCompletedAt })
+      .eq("id", week.id);
+
+    if (error) {
+      console.error("Error toggling week complete:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o status da semana.",
+      });
+      return;
+    }
+
+    setWeeks((prev) =>
+      prev.map((w) => (w.id === week.id ? { ...w, completed_at: newCompletedAt } : w))
+    );
+
+    toast({
+      title: newCompletedAt ? "Semana salva" : "Semana reaberta",
+      description: newCompletedAt
+        ? `Semana ${week.week_number} marcada como concluída.`
+        : `Semana ${week.week_number} disponível para edição novamente.`,
+    });
+
   if (loading) {
     return (
       <div className="space-y-6">
