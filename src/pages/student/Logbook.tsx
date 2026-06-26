@@ -38,6 +38,7 @@ interface LogbookWeek {
   week_number: number;
   workout_id: string;
   notes: string | null;
+  completed_at: string | null;
   workout: {
     name: string;
   };
