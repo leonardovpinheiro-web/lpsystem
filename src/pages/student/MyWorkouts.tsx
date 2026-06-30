@@ -303,6 +303,7 @@ export default function MyWorkouts() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       <div className="space-y-4">
         {program.workouts.map((workout) => (
