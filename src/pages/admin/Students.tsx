@@ -128,6 +128,7 @@ export default function Students() {
     setEditStatus(student.status);
     setEditNotes(student.admin_notes || "");
     setEditDietUrl(student.diet_url || null);
+    setEditAbdominalEnabled(student.abdominal_routine_enabled ?? true);
     setShowDeleteConfirm(false);
     setDeleteNameInput("");
     setDeleteNameError("");
