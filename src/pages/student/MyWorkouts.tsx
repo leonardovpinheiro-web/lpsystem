@@ -49,6 +49,7 @@ interface Program {
 export default function MyWorkouts() {
   const [program, setProgram] = useState<Program | null>(null);
   const [abdominalEnabled, setAbdominalEnabled] = useState<boolean>(true);
+  const [abdominalExpanded, setAbdominalExpanded] = useState<boolean>(false);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
@@ -250,59 +251,77 @@ export default function MyWorkouts() {
 
       {/* Abdominal Control Card */}
       {abdominalEnabled && (
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-              <Dumbbell className="w-5 h-5 text-primary" />
+        <Card className="border-primary/30 bg-primary/5 overflow-hidden">
+          <button
+            className="w-full p-4 flex items-center justify-between bg-secondary/50 hover:bg-secondary/70 transition-colors"
+            onClick={() => setAbdominalExpanded((prev) => !prev)}
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <Dumbbell className="w-5 h-5 text-primary" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-primary mb-1">
+                  Controle abdominal
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Fazer todos os dias em jejum
+                </p>
+              </div>
             </div>
-            <div className="space-y-3 flex-1">
-              <div>
-                <h3 className="font-semibold text-primary mb-1">Controle abdominal: fazer todos os dias em jejum</h3>
+            {abdominalExpanded ? (
+              <ChevronUp className="w-5 h-5 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
+            )}
+          </button>
+
+          {abdominalExpanded && (
+            <CardContent className="p-4 pt-0">
+              <div className="pl-[3.25rem] space-y-3">
                 <p className="text-sm text-muted-foreground">
                   O controle abdominal fortalece o abdômen e facilita a definição
                 </p>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">1. Vácuo abdominal</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => openVideo("https://vimeo.com/913771959?fl=pl&fe=sh", "Vácuo abdominal")}
-                  >
-                    <Play className="w-3 h-3 mr-1" />
-                    Ver vídeo
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground pl-4">
-                  Realizar 10 séries de 10-15 segundos cada vácuo
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">2. Prancha abdominal</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => openVideo("https://vimeo.com/909742876", "Prancha abdominal")}
-                  >
-                    <Play className="w-3 h-3 mr-1" />
-                    Ver vídeo
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">1. Vácuo abdominal</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => openVideo("https://vimeo.com/913771959?fl=pl&fe=sh", "Vácuo abdominal")}
+                    >
+                      <Play className="w-3 h-3 mr-1" />
+                      Ver vídeo
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground pl-4">
+                    Realizar 10 séries de 10-15 segundos cada vácuo
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground pl-4">
-                  Realizar 3 séries de 30-60 segundos - o quanto aguentar
-                </p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">2. Prancha abdominal</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => openVideo("https://vimeo.com/909742876", "Prancha abdominal")}
+                    >
+                      <Play className="w-3 h-3 mr-1" />
+                      Ver vídeo
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground pl-4">
+                    Realizar 3 séries de 30-60 segundos - o quanto aguentar
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          )}
+        </Card>
       )}
 
       <div className="space-y-4">
