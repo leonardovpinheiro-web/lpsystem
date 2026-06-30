@@ -575,6 +575,22 @@ export default function Students() {
 
             <Separator />
 
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="abdominal-toggle">Controle abdominal</Label>
+                <p className="text-xs text-muted-foreground">
+                  Exibir o card de vácuo e prancha na tela de treinos do aluno
+                </p>
+              </div>
+              <Switch
+                id="abdominal-toggle"
+                checked={editAbdominalEnabled}
+                onCheckedChange={setEditAbdominalEnabled}
+              />
+            </div>
+
+            <Separator />
+
             <div className="space-y-3">
               {!showDeleteConfirm ? (
                 <Button
