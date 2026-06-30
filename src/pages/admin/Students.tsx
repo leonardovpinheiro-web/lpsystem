@@ -182,6 +182,7 @@ export default function Students() {
         status: editStatus,
         admin_notes: editNotes || null,
         diet_url: editDietUrl,
+        abdominal_routine_enabled: editAbdominalEnabled,
       })
       .eq("id", editingStudent.id);
 
