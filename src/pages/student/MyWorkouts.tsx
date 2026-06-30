@@ -81,6 +81,8 @@ export default function MyWorkouts() {
       return;
     }
 
+    setAbdominalEnabled(studentData.abdominal_routine_enabled ?? true);
+
     // Fetch active program with workouts and exercises
     const { data: programData, error: programError } = await supabase
       .from("training_programs")
