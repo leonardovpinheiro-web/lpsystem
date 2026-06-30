@@ -49,6 +49,7 @@ interface Program {
 export default function MyWorkouts() {
   const [program, setProgram] = useState<Program | null>(null);
   const [abdominalEnabled, setAbdominalEnabled] = useState<boolean>(true);
+  const [abdominalExpanded, setAbdominalExpanded] = useState<boolean>(false);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
