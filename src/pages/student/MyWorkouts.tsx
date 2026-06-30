@@ -249,6 +249,7 @@ export default function MyWorkouts() {
       )}
 
       {/* Abdominal Control Card */}
+      {abdominalEnabled && (
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
