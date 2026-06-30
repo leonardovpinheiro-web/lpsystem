@@ -57,6 +57,7 @@ export default function Students() {
   const [editStatus, setEditStatus] = useState<"active" | "paused">("active");
   const [editNotes, setEditNotes] = useState("");
   const [editDietUrl, setEditDietUrl] = useState<string | null>(null);
+  const [editAbdominalEnabled, setEditAbdominalEnabled] = useState<boolean>(true);
   const [isUploadingDiet, setIsUploadingDiet] = useState(false);
 
   // Delete confirmation state
