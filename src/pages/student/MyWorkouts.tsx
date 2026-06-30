@@ -48,6 +48,7 @@ interface Program {
 
 export default function MyWorkouts() {
   const [program, setProgram] = useState<Program | null>(null);
+  const [abdominalEnabled, setAbdominalEnabled] = useState<boolean>(true);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
@@ -71,7 +72,7 @@ export default function MyWorkouts() {
     // First get student id
     const { data: studentData, error: studentError } = await supabase
       .from("students")
-      .select("id")
+      .select("id, abdominal_routine_enabled")
       .eq("user_id", user?.id)
       .single();
 
@@ -79,6 +80,8 @@ export default function MyWorkouts() {
       setLoading(false);
       return;
     }
+
+    setAbdominalEnabled(studentData.abdominal_routine_enabled ?? true);
 
     // Fetch active program with workouts and exercises
     const { data: programData, error: programError } = await supabase
@@ -246,6 +249,7 @@ export default function MyWorkouts() {
       )}
 
       {/* Abdominal Control Card */}
+      {abdominalEnabled && (
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
@@ -299,6 +303,7 @@ export default function MyWorkouts() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       <div className="space-y-4">
         {program.workouts.map((workout) => (

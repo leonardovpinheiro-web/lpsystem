@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, User, MoreVertical, Loader2, Mail, ClipboardList, Dumbbell, Upload, FileText, Trash2, ExternalLink, AlertTriangle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +36,7 @@ interface Student {
   status: "active" | "paused";
   admin_notes: string | null;
   diet_url: string | null;
+  abdominal_routine_enabled: boolean;
   created_at: string;
   profile: {
     full_name: string;
@@ -56,6 +58,7 @@ export default function Students() {
   const [editStatus, setEditStatus] = useState<"active" | "paused">("active");
   const [editNotes, setEditNotes] = useState("");
   const [editDietUrl, setEditDietUrl] = useState<string | null>(null);
+  const [editAbdominalEnabled, setEditAbdominalEnabled] = useState<boolean>(true);
   const [isUploadingDiet, setIsUploadingDiet] = useState(false);
 
   // Delete confirmation state
@@ -126,6 +129,7 @@ export default function Students() {
     setEditStatus(student.status);
     setEditNotes(student.admin_notes || "");
     setEditDietUrl(student.diet_url || null);
+    setEditAbdominalEnabled(student.abdominal_routine_enabled ?? true);
     setShowDeleteConfirm(false);
     setDeleteNameInput("");
     setDeleteNameError("");
@@ -179,6 +183,7 @@ export default function Students() {
         status: editStatus,
         admin_notes: editNotes || null,
         diet_url: editDietUrl,
+        abdominal_routine_enabled: editAbdominalEnabled,
       })
       .eq("id", editingStudent.id);
 
@@ -566,6 +571,22 @@ export default function Students() {
                   </Label>
                 </div>
               )}
+            </div>
+
+            <Separator />
+
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="abdominal-toggle">Controle abdominal</Label>
+                <p className="text-xs text-muted-foreground">
+                  Exibir o card de vácuo e prancha na tela de treinos do aluno
+                </p>
+              </div>
+              <Switch
+                id="abdominal-toggle"
+                checked={editAbdominalEnabled}
+                onCheckedChange={setEditAbdominalEnabled}
+              />
             </div>
 
             <Separator />

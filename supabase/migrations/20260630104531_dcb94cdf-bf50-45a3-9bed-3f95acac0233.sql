@@ -1,0 +1,1 @@
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS abdominal_routine_enabled boolean NOT NULL DEFAULT true;

@@ -480,6 +480,7 @@ export type Database = {
       }
       students: {
         Row: {
+          abdominal_routine_enabled: boolean
           admin_notes: string | null
           created_at: string
           diet_url: string | null
@@ -489,6 +490,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          abdominal_routine_enabled?: boolean
           admin_notes?: string | null
           created_at?: string
           diet_url?: string | null
@@ -498,6 +500,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          abdominal_routine_enabled?: boolean
           admin_notes?: string | null
           created_at?: string
           diet_url?: string | null
