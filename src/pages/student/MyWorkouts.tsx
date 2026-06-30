@@ -71,7 +71,7 @@ export default function MyWorkouts() {
     // First get student id
     const { data: studentData, error: studentError } = await supabase
       .from("students")
-      .select("id")
+      .select("id, abdominal_routine_enabled")
       .eq("user_id", user?.id)
       .single();
 
