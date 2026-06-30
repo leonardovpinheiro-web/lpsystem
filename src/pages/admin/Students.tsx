@@ -35,6 +35,7 @@ interface Student {
   status: "active" | "paused";
   admin_notes: string | null;
   diet_url: string | null;
+  abdominal_routine_enabled: boolean;
   created_at: string;
   profile: {
     full_name: string;
